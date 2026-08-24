@@ -112,6 +112,7 @@
     .nav-item-admin button.active {
       background: rgba(168, 85, 247, 0.15);
       color: var(--admin-purple);
+      font-weight: 700;
     }
 
     .user-profile-box {
@@ -260,8 +261,8 @@
     /* Stats Grid */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 18px;
       margin-bottom: 28px;
     }
 
@@ -350,6 +351,30 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .filter-btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .filter-btn {
+      padding: 6px 12px;
+      background: #23272e;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      background: var(--admin-purple);
+      color: #fff;
+      border-color: var(--admin-purple);
     }
 
     .toast {
@@ -710,28 +735,55 @@
 
     <!-- TAB 7: Super Admin Panel -->
     <div id="sectionAdmin" style="display: none;">
+      <!-- Admin Metric Cards -->
+      <div class="stats-grid">
+        <div class="stat-card" style="border-left: 4px solid var(--admin-purple);">
+          <div class="stat-label">Total Signed-up Users <i class="fa-solid fa-users" style="color: var(--admin-purple);"></i></div>
+          <div class="stat-value" id="adminStatTotalUsers">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--primary);">
+          <div class="stat-label">Pending Approval Requests <i class="fa-solid fa-hourglass-half" style="color: var(--primary);"></i></div>
+          <div class="stat-value" id="adminStatPending" style="color: var(--primary);">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--success);">
+          <div class="stat-label">Active Approved Merchants <i class="fa-solid fa-circle-check" style="color: var(--success);"></i></div>
+          <div class="stat-value" id="adminStatActive">0</div>
+        </div>
+        <div class="stat-card" style="border-left: 4px solid var(--danger);">
+          <div class="stat-label">Rejected Accounts <i class="fa-solid fa-ban" style="color: var(--danger);"></i></div>
+          <div class="stat-value" id="adminStatRejected">0</div>
+        </div>
+      </div>
+
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h3 class="card-title" style="margin-bottom: 0; color: var(--admin-purple);">
-            <i class="fa-solid fa-user-shield"></i> Merchant Approval Management
+            <i class="fa-solid fa-user-shield"></i> User Sign-up & Approval Management
           </h3>
           <button class="btn btn-secondary" onclick="fetchAdminUsers()">
             <i class="fa-solid fa-arrows-rotate"></i> Refresh List
           </button>
         </div>
 
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
-          Review and approve newly registered merchants. Users cannot log in or use the API until you approve their account.
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Review all merchants who registered on your website. Unapproved users cannot log in until you click "Approve".
         </p>
+
+        <!-- Filter Buttons -->
+        <div class="filter-btn-group">
+          <button class="filter-btn active" id="btnFilterAll" onclick="filterAdminUsers('ALL')">All Users (<span id="countFilterAll">0</span>)</button>
+          <button class="filter-btn" id="btnFilterPending" onclick="filterAdminUsers('PENDING_APPROVAL')">Pending Approval (<span id="countFilterPending">0</span>)</button>
+          <button class="filter-btn" id="btnFilterActive" onclick="filterAdminUsers('ACTIVE')">Active Approved (<span id="countFilterActive">0</span>)</button>
+        </div>
 
         <div style="overflow-x: auto;">
           <table>
             <thead>
               <tr>
-                <th>User / Business</th>
-                <th>Email</th>
+                <th>User / Merchant Name</th>
+                <th>Email Address</th>
                 <th>Role</th>
-                <th>Status</th>
+                <th>Approval Status</th>
                 <th>Registered At</th>
                 <th>Admin Actions</th>
               </tr>
@@ -755,6 +807,8 @@
 
     let currentUser = null;
     let rawSecret = '';
+    let allAdminUsers = [];
+    let currentAdminFilter = 'ALL';
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -782,7 +836,7 @@
         bot: ['Telegram Bot Integration', 'Automate crypto sales inside Telegram'],
         api: ['Gateway API Keys', 'Credentials for website & external app integration'],
         orders: ['Payment Orders', 'Complete transaction records & statuses'],
-        admin: ['Admin Approval Panel', 'Authorize or reject pending merchant registrations'],
+        admin: ['Admin Approval Panel', 'Authorize or reject user sign-up requests'],
       };
 
       document.getElementById('pageHeading').innerText = titles[tab][0];
@@ -825,10 +879,10 @@
         // Fetch Live Binance Balance
         fetchLiveBinanceBalance();
 
-        // If Admin, check pending users
+        // If Admin, display admin nav tab
         if (currentUser.role === 'ADMIN') {
           document.getElementById('navItemAdmin').style.display = 'block';
-          fetchAdminUsersCount();
+          fetchAdminOverview();
         }
       } catch (err) {
         console.error('Dashboard load error:', err);
@@ -868,7 +922,7 @@
       rawSecret = u.gatewayApiSecret || '';
     }
 
-    async function fetchAdminUsersCount() {
+    async function fetchAdminOverview() {
       try {
         const res = await fetch('/api/v1/admin/overview', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -876,13 +930,16 @@
         const data = await res.json();
         if (data.success) {
           document.getElementById('pendingCountBadge').innerText = data.stats.pendingApprovals;
+          document.getElementById('adminStatTotalUsers').innerText = data.stats.totalUsers;
+          document.getElementById('adminStatPending').innerText = data.stats.pendingApprovals;
+          document.getElementById('adminStatActive').innerText = data.stats.activeMerchants;
         }
       } catch (e) {}
     }
 
     async function fetchAdminUsers() {
       const tbody = document.getElementById('adminUsersTbody');
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users list...</td></tr>';
 
       try {
         const res = await fetch('/api/v1/admin/users', {
@@ -891,33 +948,79 @@
         const data = await res.json();
 
         if (data.success && data.users) {
-          tbody.innerHTML = data.users.map(u => `
-            <tr>
-              <td><strong>${u.name}</strong></td>
-              <td>${u.email}</td>
-              <td><span class="badge badge-${u.role}">${u.role}</span></td>
-              <td><span class="badge badge-${u.status}">${u.status}</span></td>
-              <td style="font-size: 12px; color: var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td>
-              <td>
-                ${u.role !== 'ADMIN' ? `
-                  ${u.status !== 'ACTIVE' ? `
-                    <button class="btn btn-success" style="padding: 4px 10px; font-size: 11px; margin-right: 4px;" onclick="approveUser('${u.id}')">
-                      <i class="fa-solid fa-check"></i> Approve
-                    </button>
-                  ` : ''}
-                  ${u.status !== 'REJECTED' ? `
-                    <button class="btn btn-danger" style="padding: 4px 10px; font-size: 11px;" onclick="rejectUser('${u.id}')">
-                      <i class="fa-solid fa-xmark"></i> Reject
-                    </button>
-                  ` : ''}
-                ` : '<span style="color: var(--text-muted); font-size: 11px;">Primary Admin</span>'}
-              </td>
-            </tr>
-          `).join('');
+          allAdminUsers = data.users;
+          updateFilterCounts();
+          renderFilteredAdminUsers();
+          fetchAdminOverview();
         }
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center;">Error: ${err.message}</td></tr>`;
       }
+    }
+
+    function updateFilterCounts() {
+      const total = allAdminUsers.length;
+      const pending = allAdminUsers.filter(u => u.status === 'PENDING_APPROVAL' || !u.isApproved).length;
+      const active = allAdminUsers.filter(u => u.status === 'ACTIVE' && u.isApproved).length;
+      const rejected = allAdminUsers.filter(u => u.status === 'REJECTED').length;
+
+      document.getElementById('countFilterAll').innerText = total;
+      document.getElementById('countFilterPending').innerText = pending;
+      document.getElementById('countFilterActive').innerText = active;
+      document.getElementById('adminStatRejected').innerText = rejected;
+    }
+
+    function filterAdminUsers(status) {
+      currentAdminFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      if (status === 'ALL') document.getElementById('btnFilterAll').classList.add('active');
+      else if (status === 'PENDING_APPROVAL') document.getElementById('btnFilterPending').classList.add('active');
+      else if (status === 'ACTIVE') document.getElementById('btnFilterActive').classList.add('active');
+
+      renderFilteredAdminUsers();
+    }
+
+    function renderFilteredAdminUsers() {
+      const tbody = document.getElementById('adminUsersTbody');
+      let filtered = allAdminUsers;
+
+      if (currentAdminFilter === 'PENDING_APPROVAL') {
+        filtered = allAdminUsers.filter(u => u.status === 'PENDING_APPROVAL' || !u.isApproved);
+      } else if (currentAdminFilter === 'ACTIVE') {
+        filtered = allAdminUsers.filter(u => u.status === 'ACTIVE' && u.isApproved);
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No users found in this category.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(u => `
+        <tr>
+          <td><strong>${u.name}</strong></td>
+          <td>${u.email}</td>
+          <td><span class="badge badge-${u.role}">${u.role}</span></td>
+          <td><span class="badge badge-${u.status}">${u.status === 'PENDING_APPROVAL' ? '⏳ PENDING' : u.status}</span></td>
+          <td style="font-size: 12px; color: var(--text-muted);">${new Date(u.createdAt).toLocaleString()}</td>
+          <td>
+            ${u.role !== 'ADMIN' ? `
+              ${u.status !== 'ACTIVE' ? `
+                <button class="btn btn-success" style="padding: 4px 10px; font-size: 11px; margin-right: 4px;" onclick="approveUser('${u.id}')">
+                  <i class="fa-solid fa-check"></i> Approve
+                </button>
+              ` : ''}
+              ${u.status !== 'REJECTED' ? `
+                <button class="btn btn-danger" style="padding: 4px 10px; font-size: 11px; margin-right: 4px;" onclick="rejectUser('${u.id}')">
+                  <i class="fa-solid fa-xmark"></i> Reject
+                </button>
+              ` : ''}
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; color: var(--danger);" title="Delete User" onclick="deleteUser('${u.id}')">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : '<span style="color: var(--text-muted); font-size: 11px;">Primary Admin</span>'}
+          </td>
+        </tr>
+      `).join('');
     }
 
     async function approveUser(userId) {
@@ -930,7 +1033,6 @@
         if (data.success) {
           showToast('✅ User approved & activated!');
           fetchAdminUsers();
-          fetchAdminUsersCount();
         } else {
           alert('Error: ' + data.error);
         }
@@ -950,7 +1052,25 @@
         if (data.success) {
           showToast('User registration rejected.');
           fetchAdminUsers();
-          fetchAdminUsersCount();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('Are you sure you want to permanently delete this user?')) return;
+      try {
+        const res = await fetch(`/api/v1/admin/user/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('User deleted.');
+          fetchAdminUsers();
         } else {
           alert('Error: ' + data.error);
         }

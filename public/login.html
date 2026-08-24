@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Merchant Portal - Login & Instant Sign-up | Binance Pay Gateway</title>
+  <title>Merchant Portal - Login & Sign-up | Binance Pay Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,6 +20,7 @@
       --text-muted: #848e9c;
       --success: #0ecb81;
       --danger: #f6465d;
+      --warning: #f0b90b;
     }
 
     * {
@@ -45,7 +46,7 @@
       border: 1px solid var(--border);
       border-radius: 20px;
       width: 100%;
-      max-width: 440px;
+      max-width: 450px;
       padding: 32px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
     }
@@ -76,18 +77,18 @@
       margin-top: 4px;
     }
 
-    .instant-badge {
-      background: rgba(14, 203, 129, 0.15);
-      border: 1px solid var(--success);
-      color: var(--success);
-      font-size: 12px;
+    .approval-badge {
+      background: rgba(240, 185, 11, 0.15);
+      border: 1px solid var(--warning);
+      color: var(--warning);
+      font-size: 11px;
       font-weight: 700;
-      padding: 6px 12px;
+      padding: 5px 12px;
       border-radius: 20px;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
 
     .tab-switch {
@@ -145,6 +146,36 @@
       border-color: var(--primary);
     }
 
+    /* Password field with Eye Toggle button */
+    .password-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-wrapper .form-control {
+      padding-right: 44px;
+    }
+
+    .btn-toggle-pwd {
+      position: absolute;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .btn-toggle-pwd:hover {
+      color: var(--primary);
+    }
+
     .btn-submit {
       width: 100%;
       background: var(--primary);
@@ -168,6 +199,7 @@
       padding: 12px;
       border-radius: 10px;
       font-size: 13px;
+      line-height: 1.5;
       margin-bottom: 18px;
       display: none;
     }
@@ -176,6 +208,12 @@
       background: rgba(246, 70, 93, 0.15);
       border: 1px solid var(--danger);
       color: var(--danger);
+    }
+
+    .alert-warning {
+      background: rgba(240, 185, 11, 0.15);
+      border: 1px solid var(--warning);
+      color: var(--warning);
     }
 
     .alert-success {
@@ -203,15 +241,15 @@
     <div class="brand-header">
       <i class="fa-solid fa-coins brand-icon"></i>
       <h1 class="brand-title">Binance <span>Pay</span> Gateway</h1>
-      <p class="brand-subtitle">Login with Gmail/Email to access all features</p>
-      <div class="instant-badge">
-        <i class="fa-solid fa-bolt"></i> Instant Sign-up • No Admin Approval Needed
+      <p class="brand-subtitle">Login with your Email & Password</p>
+      <div class="approval-badge">
+        <i class="fa-solid fa-user-shield"></i> Registration Requires Admin Approval
       </div>
     </div>
 
     <div class="tab-switch">
       <button class="tab-btn active" id="loginTabBtn" onclick="switchTab('login')">Log In</button>
-      <button class="tab-btn" id="regTabBtn" onclick="switchTab('register')">Sign Up (Instant)</button>
+      <button class="tab-btn" id="regTabBtn" onclick="switchTab('register')">Sign Up (Request Access)</button>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -222,36 +260,51 @@
         <label><i class="fa-regular fa-envelope"></i> Email / Gmail Address</label>
         <input type="email" id="loginEmail" class="form-control" placeholder="your.name@gmail.com" required />
       </div>
+
       <div class="form-group">
         <label><i class="fa-solid fa-lock"></i> Password</label>
-        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required />
+        <div class="password-wrapper">
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required />
+          <button type="button" class="btn-toggle-pwd" title="Toggle password visibility" onclick="togglePassword('loginPassword', 'loginEyeIcon')">
+            <i class="fa-solid fa-eye" id="loginEyeIcon"></i>
+          </button>
+        </div>
       </div>
+
       <button type="submit" class="btn-submit" id="loginSubmitBtn">
-        <i class="fa-solid fa-arrow-right-to-bracket"></i> Log In & Continue
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Log In to Portal
       </button>
     </form>
 
     <!-- Register Form -->
     <form id="regForm" style="display: none;" onsubmit="handleRegister(event)">
       <div class="form-group">
-        <label><i class="fa-regular fa-user"></i> Name / Business Name</label>
-        <input type="text" id="regName" class="form-control" placeholder="John Doe / My Store" required />
+        <label><i class="fa-regular fa-user"></i> Full Name / Merchant Name</label>
+        <input type="text" id="regName" class="form-control" placeholder="My E-Commerce Store" required />
       </div>
+
       <div class="form-group">
         <label><i class="fa-regular fa-envelope"></i> Email / Gmail Address</label>
         <input type="email" id="regEmail" class="form-control" placeholder="your.name@gmail.com" required />
       </div>
+
       <div class="form-group">
-        <label><i class="fa-solid fa-lock"></i> Create Password (min 6 characters)</label>
-        <input type="password" id="regPassword" class="form-control" placeholder="••••••••" minlength="6" required />
+        <label><i class="fa-solid fa-lock"></i> Password (min 6 characters)</label>
+        <div class="password-wrapper">
+          <input type="password" id="regPassword" class="form-control" placeholder="••••••••" minlength="6" required />
+          <button type="button" class="btn-toggle-pwd" title="Toggle password visibility" onclick="togglePassword('regPassword', 'regEyeIcon')">
+            <i class="fa-solid fa-eye" id="regEyeIcon"></i>
+          </button>
+        </div>
       </div>
+
       <button type="submit" class="btn-submit" id="regSubmitBtn">
-        <i class="fa-solid fa-bolt"></i> Create Free Account & Enter
+        <i class="fa-solid fa-user-plus"></i> Submit Sign-up Request
       </button>
     </form>
 
     <div class="footer-links">
-      <p style="margin-top: 8px;">🔐 Zero waiting time • Instant activation</p>
+      <p style="margin-top: 8px; font-size: 11px;">🔒 Protected by Admin Authorization Guard</p>
     </div>
   </div>
 
@@ -259,9 +312,25 @@
     const urlParams = new URLSearchParams(window.location.search);
     const redirectTarget = urlParams.get('redirect') || '/dashboard';
 
-    // If already logged in, redirect immediately
+    // If already logged in, redirect
     if (localStorage.getItem('bg_token')) {
       window.location.href = redirectTarget;
+    }
+
+    // Toggle Password Visibility (Show/Hide)
+    function togglePassword(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
     }
 
     function switchTab(tab) {
@@ -284,10 +353,10 @@
       }
     }
 
-    function showAlert(msg, isError = true) {
+    function showAlert(msg, type = 'error') {
       const box = document.getElementById('alertBox');
-      box.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
-      box.innerText = msg;
+      box.className = `alert alert-${type}`;
+      box.innerHTML = msg;
       box.style.display = 'block';
     }
 
@@ -312,13 +381,17 @@
         if (data.success && data.token) {
           localStorage.setItem('bg_token', data.token);
           localStorage.setItem('bg_user', JSON.stringify(data.user));
-          showAlert('Login successful! Entering...', false);
+          showAlert('✅ Login successful! Entering portal...', 'success');
           setTimeout(() => { window.location.href = redirectTarget; }, 600);
         } else {
-          showAlert(data.error || 'Login failed');
+          if (data.pendingApproval) {
+            showAlert('⏳ <strong>অ্যাকাউন্ট অনুমোদন অপেক্ষমান:</strong><br/>আপনার সাইনআপ সফল হয়েছে তবে এডমিন এখনও অনুমোদন করেননি। এডমিন এপ্রুভ করার পর আপনি লগইন করতে পারবেন।', 'warning');
+          } else {
+            showAlert(data.error || 'Login failed. Please check credentials.', 'error');
+          }
         }
       } catch (err) {
-        showAlert('Network error: ' + err.message);
+        showAlert('Network error: ' + err.message, 'error');
       }
     }
 
@@ -337,16 +410,15 @@
         });
         const data = await res.json();
 
-        if (data.success && data.token) {
-          localStorage.setItem('bg_token', data.token);
-          localStorage.setItem('bg_user', JSON.stringify(data.user));
-          showAlert('🎉 Account activated immediately! Entering...', false);
-          setTimeout(() => { window.location.href = redirectTarget; }, 600);
+        if (data.success) {
+          showAlert('🎉 <strong>সাইনআপ রিকোয়েস্ট সাবমিট হয়েছে!</strong><br/>আপনার অ্যাকাউন্টটি এডমিনের অনুমোদনের জন্য জমা হয়েছে। এডমিন এপ্রুভ করলে আপনি এই ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।', 'warning');
+          document.getElementById('regForm').reset();
+          setTimeout(() => { switchTab('login'); }, 3000);
         } else {
-          showAlert(data.error || 'Registration failed');
+          showAlert(data.error || 'Registration failed', 'error');
         }
       } catch (err) {
-        showAlert('Network error: ' + err.message);
+        showAlert('Network error: ' + err.message, 'error');
       }
     }
   </script>
