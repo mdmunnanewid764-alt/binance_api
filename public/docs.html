@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API Documentation | Binance Pay Gateway & Telegram Bot</title>
+  <title>API Documentation | Binance Pay Gateway & Multi-Chain (BEP20, TRC20, ERC20)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,6 +26,9 @@
       --method-get: #61affe;
       --method-put: #fca130;
       --method-delete: #f93e3e;
+      --bep20: #f0b90b;
+      --trc20: #f6465d;
+      --erc20: #61affe;
     }
 
     * {
@@ -48,7 +51,7 @@
 
     /* Sidebar Navigation */
     aside {
-      width: 280px;
+      width: 290px;
       background: var(--sidebar-bg);
       border-right: 1px solid var(--border);
       position: sticky;
@@ -130,7 +133,7 @@
     main {
       flex: 1;
       padding: 40px;
-      max-width: 1000px;
+      max-width: 1050px;
       overflow-y: auto;
     }
 
@@ -154,172 +157,131 @@
       align-items: center;
       gap: 8px;
       text-decoration: none;
+      transition: all 0.2s;
     }
 
     .btn-primary { background: var(--primary); color: #0b0e11; }
+    .btn-primary:hover { background: var(--primary-hover); }
     .btn-secondary { background: #2b313a; color: #fff; }
+    .btn-secondary:hover { background: #39414d; }
 
     .doc-section {
-      margin-bottom: 48px;
-      scroll-margin-top: 30px;
+      margin-bottom: 50px;
+      scroll-margin-top: 40px;
     }
 
-    .doc-section h1 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
-    .doc-section h2 { font-size: 20px; font-weight: 700; margin: 24px 0 12px; }
-    .doc-section p { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin-bottom: 16px; }
-
-    /* Flow Card */
-    .flow-steps {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin: 20px 0;
-    }
-
-    .flow-step {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .flow-step-num {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: rgba(240, 185, 11, 0.2);
-      color: var(--primary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .doc-section h1 {
+      font-size: 26px;
       font-weight: 800;
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    .flow-step h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
-    .flow-step p { font-size: 12px; color: var(--text-muted); margin-bottom: 0; line-height: 1.5; }
-
-    /* Endpoint Card */
-    .endpoint-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      margin-bottom: 24px;
-      overflow: hidden;
-    }
-
-    .endpoint-header {
-      padding: 14px 18px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 12px;
-      background: #1e222a;
-      border-bottom: 1px solid var(--border);
+    }
+
+    .doc-section p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+
+    .network-badge-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .network-badge {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .net-bpay { background: rgba(240, 185, 11, 0.15); border: 1px solid var(--primary); color: var(--primary); }
+    .net-bep20 { background: rgba(240, 185, 11, 0.15); border: 1px solid var(--bep20); color: var(--bep20); }
+    .net-trc20 { background: rgba(246, 70, 93, 0.15); border: 1px solid var(--trc20); color: var(--trc20); }
+    .net-erc20 { background: rgba(97, 175, 254, 0.15); border: 1px solid var(--erc20); color: var(--erc20); }
+
+    .endpoint-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .endpoint-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .endpoint-path {
       font-family: 'JetBrains Mono', monospace;
-      font-weight: 600;
-      font-size: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
     }
 
-    .endpoint-desc {
-      margin-left: auto;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .endpoint-body {
-      padding: 20px;
-    }
-
-    /* Code Snippets & Language Switcher */
     .code-box {
       background: var(--code-bg);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
+      border-radius: 12px;
+      padding: 16px;
       margin: 14px 0;
+      position: relative;
     }
 
-    .code-header {
-      background: #11141a;
-      padding: 8px 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .code-box pre {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #3ecf8e;
+      overflow-x: auto;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #23272e;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover { color: #fff; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 16px 0;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
       border-bottom: 1px solid var(--border);
     }
 
-    .lang-tabs {
-      display: flex;
-      gap: 6px;
-    }
-
-    .lang-tab {
-      background: transparent;
-      border: none;
+    th {
       color: var(--text-muted);
-      font-size: 11px;
       font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .lang-tab.active {
-      background: #2b313a;
-      color: var(--primary);
-    }
-
-    .btn-copy {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .btn-copy:hover { color: #fff; }
-
-    pre {
-      padding: 14px;
-      font-size: 12px;
-      color: #eaecef;
-      overflow-x: auto;
-      line-height: 1.6;
-    }
-
-    /* Try It Out Interactive Tester */
-    .try-box {
-      background: #12151b;
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-top: 16px;
-    }
-
-    .form-row {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .form-input {
-      background: #0b0e11;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: #fff;
-      padding: 8px 12px;
-      font-size: 13px;
-      flex: 1;
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation Sidebar -->
+  <!-- Sidebar Navigation -->
   <aside>
     <div class="brand">
       <i class="fa-solid fa-coins"></i>
@@ -328,236 +290,226 @@
 
     <div class="nav-section-title">Getting Started</div>
     <ul class="nav-list">
-      <li><a href="#overview" class="nav-link"><i class="fa-solid fa-house"></i> Overview</a></li>
-      <li><a href="#quickstart" class="nav-link"><i class="fa-solid fa-bolt"></i> Integration Steps</a></li>
-      <li><a href="#authentication" class="nav-link"><i class="fa-solid fa-key"></i> Authentication</a></li>
+      <li><a href="#overview" class="nav-link"><i class="fa-solid fa-house"></i> Overview & Chains</a></li>
+      <li><a href="#authentication" class="nav-link"><i class="fa-solid fa-shield-halved"></i> Authentication & Keys</a></li>
+      <li><a href="#admin-approval" class="nav-link"><i class="fa-solid fa-user-shield"></i> Admin Approval</a></li>
     </ul>
 
-    <div class="nav-section-title">Payment Endpoints</div>
+    <div class="nav-section-title">Payments & Checkout</div>
     <ul class="nav-list">
       <li>
-        <a href="#ep-create-order" class="nav-link">
-          <span class="badge-method badge-post">POST</span> Create Order
+        <a href="#create-payment" class="nav-link">
+          <span class="badge-method badge-post">POST</span> /payments/create
         </a>
       </li>
       <li>
-        <a href="#ep-query-order" class="nav-link">
-          <span class="badge-method badge-get">GET</span> Query Status
+        <a href="#query-payment" class="nav-link">
+          <span class="badge-method badge-get">GET</span> /payments/:orderId
         </a>
       </li>
       <li>
-        <a href="#ep-stream-order" class="nav-link">
-          <span class="badge-method badge-get">GET</span> Live Stream (SSE)
+        <a href="#submit-tx" class="nav-link">
+          <span class="badge-method badge-post">POST</span> /payments/submit-tx
         </a>
       </li>
       <li>
-        <a href="#ep-refund-order" class="nav-link">
-          <span class="badge-method badge-post">POST</span> Refund Order
-        </a>
-      </li>
-      <li>
-        <a href="#ep-webhook" class="nav-link">
-          <span class="badge-method badge-post">POST</span> Webhook IPN
+        <a href="#webhook" class="nav-link">
+          <span class="badge-method badge-post">POST</span> /payments/webhook
         </a>
       </li>
     </ul>
 
-    <div class="nav-section-title">Telegram Bot</div>
+    <div class="nav-section-title">Merchant & Multi-Chain</div>
     <ul class="nav-list">
-      <li><a href="#telegram-integration" class="nav-link"><i class="fa-brands fa-telegram"></i> Bot Setup & Products</a></li>
+      <li>
+        <a href="#crypto-wallets" class="nav-link">
+          <span class="badge-method badge-post">POST</span> /merchant/crypto-wallets
+        </a>
+      </li>
+      <li>
+        <a href="#binance-balance" class="nav-link">
+          <span class="badge-method badge-get">GET</span> /merchant/binance-balance
+        </a>
+      </li>
+      <li>
+        <a href="#telegram-bot" class="nav-link">
+          <i class="fa-brands fa-telegram" style="color: #229ed9;"></i> Telegram Bot Guide
+        </a>
+      </li>
     </ul>
   </aside>
 
-  <!-- Main Documentation -->
+  <!-- Main Content -->
   <main>
     <div class="header-bar">
       <div>
-        <span style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Binance Pay Open API v2/v3</span>
-        <h1 style="font-size: 26px; font-weight: 800; margin-top: 4px;">Developer Documentation</h1>
+        <h1 style="font-size: 24px; font-weight: 800;">Developer API Reference</h1>
+        <p style="font-size: 13px; color: var(--text-muted);">Integrate Binance Pay & Multi-Chain (BEP20, TRC20, ERC20) in minutes</p>
       </div>
-      <div style="display: flex; gap: 10px;">
-        <a href="/login" class="btn btn-primary"><i class="fa-solid fa-user-shield"></i> Merchant Portal</a>
-        <a href="/demo" class="btn btn-secondary"><i class="fa-solid fa-store"></i> Demo Store</a>
+      <div>
+        <a href="/dashboard" class="btn btn-primary"><i class="fa-solid fa-gauge"></i> Merchant Dashboard</a>
       </div>
     </div>
 
     <!-- Section 1: Overview -->
     <section id="overview" class="doc-section">
-      <h1>Overview</h1>
+      <h1><i class="fa-solid fa-coins" style="color: var(--primary);"></i> Overview & Multi-Chain Support</h1>
       <p>
-        The <strong>Binance Pay Payment Gateway Service</strong> allows you to accept crypto payments with <strong>zero gas fees</strong> directly into your Binance wallet, whether on your website, e-commerce store, or through a Telegram Bot.
+        The <strong>Binance Pay Gateway Service</strong> provides a high-performance REST API and Telegram Bot engine enabling you to accept cryptocurrency payments with zero hassle. Customers can pay via 4 seamless payment methods:
       </p>
 
-      <div class="flow-steps">
-        <div class="flow-step">
-          <div class="flow-step-num">1</div>
-          <h4>Register Account</h4>
-          <p>Sign up on the <a href="/login" style="color: var(--primary);">Merchant Portal</a> to get your API keys.</p>
-        </div>
-        <div class="flow-step">
-          <div class="flow-step-num">2</div>
-          <h4>Connect Binance</h4>
-          <p>Enter your Binance Merchant API Key & Secret in Dashboard.</p>
-        </div>
-        <div class="flow-step">
-          <div class="flow-step-num">3</div>
-          <h4>Connect Bot / Web</h4>
-          <p>Integrate via Telegram Bot or REST Web API in minutes.</p>
-        </div>
+      <div class="network-badge-group">
+        <div class="network-badge net-bpay"><i class="fa-solid fa-bolt"></i> Binance Pay (0% Gas Fee)</div>
+        <div class="network-badge net-bep20"><i class="fa-solid fa-shield-halved"></i> BEP20 (BNB Smart Chain)</div>
+        <div class="network-badge net-trc20"><i class="fa-solid fa-cube"></i> TRC20 (TRON Network)</div>
+        <div class="network-badge net-erc20"><i class="fa-brands fa-ethereum"></i> ERC20 (Ethereum Network)</div>
       </div>
     </section>
 
     <!-- Section 2: Authentication -->
     <section id="authentication" class="doc-section">
-      <h1>Authentication</h1>
-      <p>All payment creation requests from external websites authenticate using your Gateway API Key header:</p>
-      
+      <h1><i class="fa-solid fa-key" style="color: var(--primary);"></i> Authentication</h1>
+      <p>
+        All Merchant APIs require your <strong>Merchant Gateway API Key</strong> passed in the request header:
+      </p>
       <div class="code-box">
-        <div class="code-header">
-          <span style="font-size: 12px; color: var(--text-muted);">HTTP Header</span>
-        </div>
-        <pre>x-api-key: bg_live_your_merchant_api_key</pre>
+        <button class="copy-btn" onclick="copySnippet('authHeaderSnippet')">Copy</button>
+        <pre id="authHeaderSnippet">x-api-key: bg_live_your_merchant_api_key_here</pre>
+      </div>
+      <p>
+        Or for User/Portal endpoints, pass the JWT Bearer Token:
+      </p>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copySnippet('jwtSnippet')">Copy</button>
+        <pre id="jwtSnippet">Authorization: Bearer YOUR_JWT_TOKEN</pre>
       </div>
     </section>
 
-    <!-- Section 3: Create Order Endpoint -->
-    <section id="ep-create-order" class="doc-section">
-      <h2>1. Create Payment Order</h2>
+    <!-- Section 3: Create Payment Order -->
+    <section id="create-payment" class="doc-section">
+      <h1>Create Payment Order</h1>
+      <p>Creates a new crypto checkout order returning a hosted checkout URL, Binance Pay QR code, and BEP20/TRC20/ERC20 deposit addresses.</p>
+
       <div class="endpoint-card">
         <div class="endpoint-header">
           <span class="badge-method badge-post">POST</span>
           <span class="endpoint-path">/api/v1/payments/create</span>
-          <span class="endpoint-desc">Initiates a Binance Pay invoice</span>
         </div>
-        <div class="endpoint-body">
-          <p>Generates a hosted payment URL, QR code, and mobile Binance App deep link.</p>
 
-          <h4 style="font-size: 13px; margin: 12px 0 6px;">Request Body (JSON):</h4>
-          <pre style="background: var(--code-bg); padding: 12px; border-radius: 8px; font-size: 12px;">
-{
-  "orderAmount": "10.00",
+        <h4 style="font-size: 13px; margin: 16px 0 8px;">Request Headers:</h4>
+        <div class="code-box">
+          <pre>Content-Type: application/json
+x-api-key: YOUR_MERCHANT_API_KEY</pre>
+        </div>
+
+        <h4 style="font-size: 13px; margin: 16px 0 8px;">Request Body (JSON):</h4>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copySnippet('createReqBody')">Copy</button>
+          <pre id="createReqBody">{
+  "orderAmount": "25.00",
   "currency": "USDT",
-  "goodsName": "1-Month VIP Pass",
-  "goodsDetail": "Access to private group",
-  "merchantTradeNo": "ORDER_123456" // Optional, auto-generated if omitted
+  "goodsName": "1-Month VIP Subscription",
+  "goodsDetail": "Access to private signal group",
+  "merchantTradeNo": "ORDER_1787598000"
 }</pre>
+        </div>
 
-          <h4 style="font-size: 13px; margin: 16px 0 6px;">Code Example:</h4>
-          <div class="code-box">
-            <div class="code-header">
-              <div class="lang-tabs">
-                <button class="lang-tab active">cURL</button>
-                <button class="lang-tab">Node.js</button>
-                <button class="lang-tab">Python</button>
-              </div>
-              <button class="btn-copy" onclick="copySnippet('codeCreateOrder')"><i class="fa-regular fa-copy"></i></button>
-            </div>
-            <pre id="codeCreateOrder">
-curl -X POST http://localhost:3000/api/v1/payments/create \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: YOUR_MERCHANT_KEY" \
-  -d '{
-    "orderAmount": "10.00",
+        <h4 style="font-size: 13px; margin: 16px 0 8px;">Response (201 Created):</h4>
+        <div class="code-box">
+          <pre>{
+  "success": true,
+  "message": "Payment order created successfully",
+  "order": {
+    "merchantTradeNo": "ORDER_1787598000",
+    "orderAmount": "25.00",
     "currency": "USDT",
-    "goodsName": "1-Month VIP Pass"
-  }'</pre>
-          </div>
-
-          <!-- Interactive Tester -->
-          <div class="try-box">
-            <h4 style="font-size: 13px; margin-bottom: 10px; color: var(--primary);"><i class="fa-solid fa-play"></i> Interactive Test:</h4>
-            <div class="form-row">
-              <input type="text" id="testGoodsName" class="form-input" value="Test Order" placeholder="Goods Name" />
-              <input type="number" id="testAmount" class="form-input" value="5.00" placeholder="Amount (USDT)" />
-              <button class="btn btn-primary" onclick="testCreateOrder()">Test Create</button>
-            </div>
-            <pre id="testCreateResult" style="display: none; background: #000; padding: 10px; border-radius: 6px; font-size: 11px; margin-top: 10px;"></pre>
-          </div>
+    "status": "INITIAL",
+    "checkoutUrl": "https://your-domain.onrender.com/checkout/ORDER_1787598000",
+    "cryptoWallets": {
+      "bep20": "0x386Ac338C488F61a9B4810fe17Fa2a78BE456108",
+      "trc20": "TYasdf123456789TronUSDTAddress9988",
+      "erc20": "0x386Ac338C488F61a9B4810fe17Fa2a78BE456108"
+    }
+  }
+}</pre>
         </div>
       </div>
     </section>
 
-    <!-- Section 4: Query Order Endpoint -->
-    <section id="ep-query-order" class="doc-section">
-      <h2>2. Query Order Status</h2>
+    <!-- Section 4: Query Order Status -->
+    <section id="query-payment" class="doc-section">
+      <h1>Query Payment Order</h1>
+      <p>Retrieve the real-time status of any order by its <code>merchantTradeNo</code>.</p>
+
       <div class="endpoint-card">
         <div class="endpoint-header">
           <span class="badge-method badge-get">GET</span>
           <span class="endpoint-path">/api/v1/payments/:merchantTradeNo</span>
-          <span class="endpoint-desc">Check payment completion</span>
         </div>
-        <div class="endpoint-body">
-          <pre style="background: var(--code-bg); padding: 12px; border-radius: 8px; font-size: 12px;">
-curl http://localhost:3000/api/v1/payments/ORDER_123456</pre>
-        </div>
-      </div>
-    </section>
 
-    <!-- Section 5: Webhook IPN -->
-    <section id="ep-webhook" class="doc-section">
-      <h2>3. Binance Webhook (IPN) & Verification</h2>
-      <p>When a customer completes payment, Binance Pay sends an HTTP POST notification.</p>
-
-      <div class="code-box">
-        <div class="code-header">
-          <span style="font-size: 12px; color: var(--text-muted);">Incoming Binance Webhook Structure</span>
-        </div>
-        <pre>
-Headers:
-  BinancePay-Timestamp: 1600000000000
-  BinancePay-Nonce: 32_random_chars
-  BinancePay-Signature: HMAC_SHA512_SIGNATURE
-  BinancePay-Certificate-SN: YOUR_API_KEY
-
-Body:
-{
-  "bizType": "PAY",
-  "bizIdStr": "123456789",
-  "bizStatus": "PAY_SUCCESS",
-  "data": "{\"merchantTradeNo\":\"ORDER_123456\",\"totalFee\":\"10.00\",\"currency\":\"USDT\"}"
+        <h4 style="font-size: 13px; margin: 16px 0 8px;">Response:</h4>
+        <div class="code-box">
+          <pre>{
+  "success": true,
+  "order": {
+    "merchantTradeNo": "ORDER_1787598000",
+    "orderAmount": "25.00",
+    "currency": "USDT",
+    "status": "PAID",
+    "paidNetwork": "BEP20",
+    "transactionId": "0x987654321fedcba...",
+    "paidAt": "2026-08-24T12:00:00.000Z"
+  }
 }</pre>
+        </div>
       </div>
     </section>
 
-    <!-- Section 6: Telegram Bot Integration -->
-    <section id="telegram-integration" class="doc-section">
-      <h1>Telegram Bot Integration</h1>
-      <p>
-        Selling products directly inside Telegram:
-      </p>
+    <!-- Section 5: Submit TxHash -->
+    <section id="submit-tx" class="doc-section">
+      <h1>Submit On-Chain TxHash</h1>
+      <p>Allows buyers or automated bots to submit the blockchain transaction hash for direct BEP20, TRC20, or ERC20 transfers.</p>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="badge-method badge-post">POST</span>
+          <span class="endpoint-path">/api/v1/payments/submit-tx</span>
+        </div>
+
+        <div class="code-box">
+          <button class="copy-btn" onclick="copySnippet('submitTxBody')">Copy</button>
+          <pre id="submitTxBody">{
+  "merchantTradeNo": "ORDER_1787598000",
+  "network": "BEP20",
+  "txHash": "0x78ab9c...blockchain_hash_here"
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 6: Webhook IPN -->
+    <section id="webhook" class="doc-section">
+      <h1>Binance Pay Webhook (IPN)</h1>
+      <p>Configure this webhook URL in your Binance Merchant Portal: <code>https://your-domain.onrender.com/api/v1/payments/webhook</code></p>
+    </section>
+
+    <!-- Section 7: Telegram Bot Guide -->
+    <section id="telegram-bot" class="doc-section">
+      <h1><i class="fa-brands fa-telegram" style="color: #229ed9;"></i> Telegram Bot Integration</h1>
       <ol style="font-size: 14px; color: var(--text-muted); padding-left: 20px; line-height: 1.8;">
         <li>Get your Bot Token from <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> on Telegram.</li>
-        <li>Login to <a href="/dashboard" style="color: var(--primary);">Merchant Portal</a> -> Click <strong>Telegram Bot</strong> tab.</li>
-        <li>Paste your Bot Token and add your product items & prices in USDT.</li>
-        <li>Click <strong>Save & Launch Bot</strong>. Your bot will instantly go live and process Binance Pay invoices!</li>
+        <li>Login to <a href="/dashboard" style="color: var(--primary);">Merchant Dashboard</a> -> Click <strong>Telegram Bot</strong>.</li>
+        <li>Paste your Bot Token and define product names & prices in USDT.</li>
+        <li>Click <strong>Save & Launch Bot</strong>. Your bot will instantly go live supporting Binance Pay, BEP20, TRC20, and ERC20!</li>
       </ol>
     </section>
   </main>
 
   <script>
+    // Authentication guard
     const token = localStorage.getItem('bg_token');
     if (!token) {
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-    }
-
-    async function testCreateOrder() {
-      const name = document.getElementById('testGoodsName').value;
-      const amount = document.getElementById('testAmount').value;
-      const resEl = document.getElementById('testCreateResult');
-
-      try {
-        const res = await fetch('/api/v1/payments/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderAmount: amount, currency: 'USDT', goodsName: name }),
-        });
-        const data = await res.json();
-        resEl.style.display = 'block';
-        resEl.innerText = JSON.stringify(data, null, 2);
-      } catch (err) {
-        resEl.style.display = 'block';
-        resEl.innerText = 'Error: ' + err.message;
-      }
     }
 
     function copySnippet(id) {
