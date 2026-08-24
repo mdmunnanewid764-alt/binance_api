@@ -1,4 +1,5 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { binancePayService } from '../services/binancePay.js';
 import { db } from '../db/database.js';
@@ -8,16 +9,35 @@ import { config } from '../config/env.js';
 export const paymentRouter = express.Router();
 
 /**
- * Middleware to optionally resolve merchant from Gateway API Key (x-api-key)
+ * Middleware to resolve merchant from Gateway API Key, JWT token, or metadata
  */
 function resolveMerchantApiKey(req, res, next) {
+  // 1. Check x-api-key
   const apiKey = req.headers['x-api-key'] || req.query.apiKey;
   if (apiKey) {
     const merchantUser = db.getUserByApiKey(apiKey);
     if (merchantUser) {
       req.merchantUser = merchantUser;
+      return next();
     }
   }
+
+  // 2. Check JWT Bearer token
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, config.jwtSecret);
+      if (decoded && decoded.id) {
+        const user = db.getUserById(decoded.id);
+        if (user) {
+          req.merchantUser = user;
+          return next();
+        }
+      }
+    } catch (e) {}
+  }
+
   next();
 }
 
@@ -49,10 +69,15 @@ paymentRouter.post('/create', async (req, res) => {
       });
     }
 
-    // Determine custom Binance API keys if merchant API key was passed
-    const merchantUser = req.merchantUser || (metadata.userId ? db.getUserById(metadata.userId) : null);
-    const customApiKey = merchantUser?.binanceConfig?.apiKey || null;
-    const customSecretKey = merchantUser?.binanceConfig?.secretKey || null;
+    // Determine custom Binance API keys
+    const merchantUser = req.merchantUser 
+      || (metadata.merchantUserId ? db.getUserById(metadata.merchantUserId) : null)
+      || (metadata.userId ? db.getUserById(metadata.userId) : null)
+      || db.listUsers().find(u => u.binanceConfig?.apiKey && u.binanceConfig?.secretKey)
+      || null;
+
+    const customApiKey = merchantUser?.binanceConfig?.apiKey || config.binance.apiKey || null;
+    const customSecretKey = merchantUser?.binanceConfig?.secretKey || config.binance.secretKey || null;
 
     const orderParams = {
       merchantTradeNo,

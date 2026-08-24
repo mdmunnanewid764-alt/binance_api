@@ -517,21 +517,20 @@
       if (!currentOrder) return;
       
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const prepayId = currentOrder.prepayId || tradeNo;
+      const isRealBinanceOrder = currentOrder.prepayId && !currentOrder.prepayId.startsWith('prep_');
 
-      if (isMobile) {
-        // Direct launch into Binance Mobile App
-        const appDeeplink = currentOrder.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${prepayId}`;
-        window.location.href = appDeeplink;
-        
-        // Fallback to official web portal after timeout if app is not installed
-        setTimeout(() => {
-          window.location.href = `https://pay.binance.com/en/checkout?prepayId=${prepayId}`;
-        }, 2500);
+      if (isRealBinanceOrder) {
+        if (isMobile) {
+          const appDeeplink = currentOrder.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${currentOrder.prepayId}`;
+          window.location.href = appDeeplink;
+        } else {
+          const webUrl = currentOrder.universalUrl || `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId}`;
+          window.open(webUrl, '_blank');
+        }
       } else {
-        // Open Binance Pay Official Web Checkout
-        const webUrl = currentOrder.universalUrl || `https://pay.binance.com/en/checkout?prepayId=${prepayId}`;
-        window.open(webUrl, '_blank');
+        // Guide user to BEP20 / TRC20 tabs smoothly
+        showToast('ℹ️ Switched to BEP20 (BSC) wallet deposit');
+        switchNetwork('bep20');
       }
     }
 
