@@ -59,6 +59,9 @@
       height: 100vh;
       overflow-y: auto;
       padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .brand {
@@ -129,6 +132,23 @@
     .badge-post { background: rgba(73, 204, 144, 0.2); color: var(--method-post); }
     .badge-get { background: rgba(97, 175, 254, 0.2); color: var(--method-get); }
 
+    /* Sidebar Copy Box */
+    .sidebar-export-card {
+      background: #1e2329;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .sidebar-export-card p {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
     /* Main Docs Content */
     main {
       flex: 1;
@@ -144,6 +164,14 @@
       margin-bottom: 36px;
       padding-bottom: 24px;
       border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .btn {
@@ -160,10 +188,12 @@
       transition: all 0.2s;
     }
 
-    .btn-primary { background: var(--primary); color: #0b0e11; }
-    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-primary { background: var(--primary); color: #0b0e11; font-weight: 700; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
     .btn-secondary { background: #2b313a; color: #fff; }
     .btn-secondary:hover { background: #39414d; }
+    .btn-success { background: rgba(14, 203, 129, 0.2); border: 1px solid var(--success); color: var(--success); }
+    .btn-success:hover { background: var(--success); color: #0b0e11; }
 
     .doc-section {
       margin-bottom: 50px;
@@ -190,6 +220,7 @@
       display: flex;
       gap: 8px;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
     .network-badge {
@@ -260,83 +291,106 @@
 
     .copy-btn:hover { color: #fff; }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin: 16px 0;
-    }
-
-    th, td {
-      padding: 10px 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      color: var(--text-muted);
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #181a20;
+      border: 1px solid var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 14px;
       font-weight: 600;
+      display: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
+  <!-- Toast -->
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 8px;"></i>
+    <span id="toastMsg">Full API Documentation Copied!</span>
+  </div>
+
   <!-- Sidebar Navigation -->
   <aside>
-    <div class="brand">
-      <i class="fa-solid fa-coins"></i>
-      <h2>Binance <span>Pay</span> Docs</h2>
+    <div>
+      <div class="brand">
+        <i class="fa-solid fa-coins"></i>
+        <h2>Binance <span>Pay</span> Docs</h2>
+      </div>
+
+      <div class="nav-section-title">Getting Started</div>
+      <ul class="nav-list">
+        <li><a href="#overview" class="nav-link"><i class="fa-solid fa-house"></i> Overview & Chains</a></li>
+        <li><a href="#authentication" class="nav-link"><i class="fa-solid fa-shield-halved"></i> Authentication & Keys</a></li>
+        <li><a href="#admin-approval" class="nav-link"><i class="fa-solid fa-user-shield"></i> Admin Approval</a></li>
+      </ul>
+
+      <div class="nav-section-title">Payments & Checkout</div>
+      <ul class="nav-list">
+        <li>
+          <a href="#create-payment" class="nav-link">
+            <span class="badge-method badge-post">POST</span> /payments/create
+          </a>
+        </li>
+        <li>
+          <a href="#query-payment" class="nav-link">
+            <span class="badge-method badge-get">GET</span> /payments/:orderId
+          </a>
+        </li>
+        <li>
+          <a href="#submit-tx" class="nav-link">
+            <span class="badge-method badge-post">POST</span> /payments/submit-tx
+          </a>
+        </li>
+        <li>
+          <a href="#webhook" class="nav-link">
+            <span class="badge-method badge-post">POST</span> /payments/webhook
+          </a>
+        </li>
+      </ul>
+
+      <div class="nav-section-title">Merchant & Multi-Chain</div>
+      <ul class="nav-list">
+        <li>
+          <a href="#crypto-wallets" class="nav-link">
+            <span class="badge-method badge-post">POST</span> /merchant/crypto-wallets
+          </a>
+        </li>
+        <li>
+          <a href="#binance-balance" class="nav-link">
+            <span class="badge-method badge-get">GET</span> /merchant/binance-balance
+          </a>
+        </li>
+        <li>
+          <a href="#telegram-bot" class="nav-link">
+            <i class="fa-brands fa-telegram" style="color: #229ed9;"></i> Telegram Bot Guide
+          </a>
+        </li>
+      </ul>
     </div>
 
-    <div class="nav-section-title">Getting Started</div>
-    <ul class="nav-list">
-      <li><a href="#overview" class="nav-link"><i class="fa-solid fa-house"></i> Overview & Chains</a></li>
-      <li><a href="#authentication" class="nav-link"><i class="fa-solid fa-shield-halved"></i> Authentication & Keys</a></li>
-      <li><a href="#admin-approval" class="nav-link"><i class="fa-solid fa-user-shield"></i> Admin Approval</a></li>
-    </ul>
-
-    <div class="nav-section-title">Payments & Checkout</div>
-    <ul class="nav-list">
-      <li>
-        <a href="#create-payment" class="nav-link">
-          <span class="badge-method badge-post">POST</span> /payments/create
-        </a>
-      </li>
-      <li>
-        <a href="#query-payment" class="nav-link">
-          <span class="badge-method badge-get">GET</span> /payments/:orderId
-        </a>
-      </li>
-      <li>
-        <a href="#submit-tx" class="nav-link">
-          <span class="badge-method badge-post">POST</span> /payments/submit-tx
-        </a>
-      </li>
-      <li>
-        <a href="#webhook" class="nav-link">
-          <span class="badge-method badge-post">POST</span> /payments/webhook
-        </a>
-      </li>
-    </ul>
-
-    <div class="nav-section-title">Merchant & Multi-Chain</div>
-    <ul class="nav-list">
-      <li>
-        <a href="#crypto-wallets" class="nav-link">
-          <span class="badge-method badge-post">POST</span> /merchant/crypto-wallets
-        </a>
-      </li>
-      <li>
-        <a href="#binance-balance" class="nav-link">
-          <span class="badge-method badge-get">GET</span> /merchant/binance-balance
-        </a>
-      </li>
-      <li>
-        <a href="#telegram-bot" class="nav-link">
-          <i class="fa-brands fa-telegram" style="color: #229ed9;"></i> Telegram Bot Guide
-        </a>
-      </li>
-    </ul>
+    <!-- Quick Export Action in Sidebar -->
+    <div class="sidebar-export-card">
+      <i class="fa-solid fa-file-code" style="color: var(--primary); font-size: 20px; margin-bottom: 6px;"></i>
+      <div style="font-weight: 700; font-size: 12px; margin-bottom: 4px;">Export All API Docs</div>
+      <p>Copy or download the complete markdown specification for Postman or AI prompts.</p>
+      <button class="btn btn-primary" style="width: 100%; font-size: 11px; padding: 8px 10px;" onclick="copyAllDocumentation()">
+        <i class="fa-solid fa-copy"></i> Copy Full Docs
+      </button>
+    </div>
   </aside>
 
   <!-- Main Content -->
@@ -346,8 +400,18 @@
         <h1 style="font-size: 24px; font-weight: 800;">Developer API Reference</h1>
         <p style="font-size: 13px; color: var(--text-muted);">Integrate Binance Pay & Multi-Chain (BEP20, TRC20, ERC20) in minutes</p>
       </div>
-      <div>
-        <a href="/dashboard" class="btn btn-primary"><i class="fa-solid fa-gauge"></i> Merchant Dashboard</a>
+
+      <!-- Action Buttons with "Copy All API Docs" & "Download .MD" -->
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="copyAllDocumentation()" id="btnCopyAllDocs">
+          <i class="fa-solid fa-copy"></i> Copy All API Docs
+        </button>
+        <button class="btn btn-secondary" onclick="downloadDocumentation()">
+          <i class="fa-solid fa-download"></i> Download .MD
+        </button>
+        <a href="/dashboard" class="btn btn-secondary">
+          <i class="fa-solid fa-gauge"></i> Dashboard
+        </a>
       </div>
     </div>
 
@@ -512,10 +576,183 @@ x-api-key: YOUR_MERCHANT_API_KEY</pre>
       window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
     }
 
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = msg;
+      toast.style.display = 'flex';
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
     function copySnippet(id) {
       const text = document.getElementById(id).innerText;
       navigator.clipboard.writeText(text);
-      alert('Copied to clipboard!');
+      showToast('Copied code snippet to clipboard!');
+    }
+
+    function getFullDocsMarkdown() {
+      const host = window.location.origin;
+      return `# 🪙 Binance Pay & Multi-Chain (BEP20, TRC20, ERC20) API Documentation
+
+> **Base URL:** \`${host}\`  
+> **API Version:** \`v1\`  
+> **Supported Networks:** Binance Pay, BEP20 (BNB Smart Chain), TRC20 (TRON Network), ERC20 (Ethereum Network)
+
+---
+
+## 🔐 1. Authentication
+
+All Merchant API requests require your API Key in the \`x-api-key\` request header:
+\`\`\`http
+x-api-key: bg_live_your_merchant_api_key
+Content-Type: application/json
+\`\`\`
+
+---
+
+## 💳 2. Payments & Order Creation
+
+### POST \`/api/v1/payments/create\`
+Creates a payment order supporting Binance Pay (0% Gas) as well as direct blockchain deposits (BEP20, TRC20, ERC20).
+
+**Headers:**
+- \`x-api-key\`: (Required) Merchant Gateway API Key
+- \`Content-Type\`: \`application/json\`
+
+**Request Body (JSON):**
+\`\`\`json
+{
+  "orderAmount": "25.00",
+  "currency": "USDT",
+  "goodsName": "1-Month VIP Subscription",
+  "goodsDetail": "Access to private signals",
+  "merchantTradeNo": "ORDER_1787598000"
+}
+\`\`\`
+
+**Response (201 Created):**
+\`\`\`json
+{
+  "success": true,
+  "message": "Payment order created successfully",
+  "order": {
+    "merchantTradeNo": "ORDER_1787598000",
+    "orderAmount": "25.00",
+    "currency": "USDT",
+    "status": "INITIAL",
+    "checkoutUrl": "${host}/checkout/ORDER_1787598000",
+    "cryptoWallets": {
+      "bep20": "0x386Ac338C488F61a9B4810fe17Fa2a78BE456108",
+      "trc20": "TYasdf123456789TronUSDTAddress9988",
+      "erc20": "0x386Ac338C488F61a9B4810fe17Fa2a78BE456108"
+    }
+  }
+}
+\`\`\`
+
+---
+
+## 🔍 3. Query Order Status
+
+### GET \`/api/v1/payments/:merchantTradeNo\`
+Queries real-time status of an order.
+
+**Response (200 OK):**
+\`\`\`json
+{
+  "success": true,
+  "order": {
+    "merchantTradeNo": "ORDER_1787598000",
+    "orderAmount": "25.00",
+    "currency": "USDT",
+    "status": "PAID",
+    "paidNetwork": "BEP20",
+    "transactionId": "0x987654321fedcba...",
+    "paidAt": "2026-08-24T12:00:00.000Z"
+  }
+}
+\`\`\`
+
+---
+
+## ⚡ 4. Submit On-Chain TxHash Verification
+
+### POST \`/api/v1/payments/submit-tx\`
+Submits a blockchain transaction hash for direct BEP20, TRC20, or ERC20 transfers.
+
+**Request Body (JSON):**
+\`\`\`json
+{
+  "merchantTradeNo": "ORDER_1787598000",
+  "network": "BEP20",
+  "txHash": "0x78ab9c...blockchain_hash_here"
+}
+\`\`\`
+
+---
+
+## 🔄 5. Real-Time SSE Stream
+
+### GET \`/api/v1/payments/stream/:merchantTradeNo\`
+Server-Sent Events (SSE) live connection emitting instant payment confirmation when customer pays.
+
+---
+
+## 🪝 6. Binance Pay Webhook (IPN)
+
+Configure this endpoint in your Binance Merchant Portal:
+\`\`\`text
+${host}/api/v1/payments/webhook
+\`\`\`
+
+---
+
+## 🤖 7. Telegram Bot Commands
+
+- \`/start\` - Welcome & interactive store catalogue
+- \`/products\` or \`/buy\` - Select product & generate multi-chain invoice
+- \`/status <ORDER_ID>\` - Check order status
+
+---
+*Generated by Binance Pay & Multi-Chain Gateway API*
+`;
+    }
+
+    function copyAllDocumentation() {
+      const fullDocs = getFullDocsMarkdown();
+      navigator.clipboard.writeText(fullDocs).then(() => {
+        const btn = document.getElementById('btnCopyAllDocs');
+        const origText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#0b0e11';
+
+        showToast('✅ Full API Documentation (Markdown) copied to clipboard!');
+
+        setTimeout(() => {
+          btn.innerHTML = origText;
+          btn.style.background = 'var(--primary)';
+          btn.style.color = '#0b0e11';
+        }, 2500);
+      }).catch(err => {
+        alert('Copy failed: ' + err.message);
+      });
+    }
+
+    function downloadDocumentation() {
+      const fullDocs = getFullDocsMarkdown();
+      const blob = new Blob([fullDocs], { type: 'text/markdown;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'binance_pay_multichain_api_docs.md';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('⬇️ Documentation downloaded: binance_pay_multichain_api_docs.md');
     }
   </script>
 </body>
