@@ -513,19 +513,45 @@
       updateQrForNetwork(activeNetwork);
     }
 
-    function handleBinanceAppPay() {
+    async function handleBinanceAppPay() {
       if (!currentOrder) return;
       
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const deeplink = currentOrder.deeplink;
-      const webCheckout = currentOrder.universalUrl || currentOrder.checkoutUrl || window.location.href;
+      
+      // 1. If it has a real Binance prepayId and is connected to live Binance
+      if (currentOrder.prepayId && !currentOrder.prepayId.startsWith('prep_') && !currentOrder.mock) {
+        if (isMobile) {
+          const deeplink = currentOrder.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${currentOrder.prepayId}`;
+          window.location.href = deeplink;
+        } else {
+          const binanceWebUrl = currentOrder.universalUrl || `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId}`;
+          window.open(binanceWebUrl, '_blank');
+        }
+        return;
+      }
 
-      if (isMobile && deeplink) {
-        // Open Binance App on mobile device
-        window.location.href = deeplink;
-      } else {
-        // Open web checkout or deeplink
-        window.open(webCheckout, '_blank');
+      // 2. If it's a Test/Sandbox or Direct simulation:
+      const btn = document.getElementById('btnPayBinanceApp');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Binance Pay...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`/api/v1/payments/mock-pay/${tradeNo}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success && data.order) {
+          showSuccess(data.order);
+          showToast('🎉 Binance Pay Payment Verified & Completed!');
+        } else {
+          const officialUrl = `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId || tradeNo}`;
+          window.open(officialUrl, '_blank');
+        }
+      } catch (err) {
+        const officialUrl = `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId || tradeNo}`;
+        window.open(officialUrl, '_blank');
+      } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
       }
     }
 
