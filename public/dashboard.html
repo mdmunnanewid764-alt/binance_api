@@ -1123,7 +1123,7 @@
               </div>
             `).join('');
           } else {
-            container.innerHTML = '<div class="asset-chip">0.00 USDT</div>';
+            container.innerHTML = '<div class="asset-chip"><span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> 0.00 USDT (No non-zero assets in wallet)</span></div>';
           }
         }
       } catch (err) {
