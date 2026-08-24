@@ -156,13 +156,14 @@
       width: 190px !important;
       height: 190px !important;
       display: block;
+      margin: 0 auto;
     }
 
     .address-display-box {
       background: #0b0e11;
       border: 1px solid var(--card-border);
       border-radius: 12px;
-      padding: 12px;
+      padding: 14px;
       margin-bottom: 16px;
       text-align: left;
     }
@@ -170,18 +171,22 @@
     .address-label {
       font-size: 11px;
       color: var(--text-muted);
-      margin-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
+      margin-bottom: 6px;
+      font-weight: 600;
     }
 
     .address-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 13px;
       word-break: break-all;
-      color: #fff;
+      color: #ffffff;
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+      background: #181a20;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid #2b313a;
     }
 
     .btn {
@@ -253,9 +258,39 @@
       font-size: 36px;
       margin-bottom: 20px;
     }
+
+    /* Floating Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #181a20;
+      border: 1px solid var(--success);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 700;
+      display: none;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, 10px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
   </style>
 </head>
 <body>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 6px;"></i>
+    <span id="toastMsg">Copied to clipboard!</span>
+  </div>
 
   <div class="checkout-card" id="mainCheckoutCard">
     <div class="card-header">
@@ -273,7 +308,7 @@
       <div class="order-amount-box">
         <div class="item-name" id="goodsName">Loading order details...</div>
         <div>
-          <span class="amount-value" id="orderAmount">--.--</span>
+          <span class="amount-value" id="orderAmount">5.00</span>
           <span class="amount-currency" id="currency">USDT</span>
         </div>
       </div>
@@ -314,11 +349,9 @@
             <canvas id="bep20QrCanvas" class="qr-canvas"></canvas>
           </div>
           <div class="address-display-box">
-            <div class="address-label">
-              <span>Deposit Address (BEP20 - BNB Smart Chain)</span>
-            </div>
-            <span class="address-val" id="addrBep20">0x...</span>
-            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrBep20')">
+            <div class="address-label">Deposit Address (BEP20 - BNB Smart Chain):</div>
+            <span class="address-val" id="addrBep20">0x386Ac338C488F61a9B4810fe17Fa2a78BE456108</span>
+            <button class="btn btn-secondary" id="btnCopyBep20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrBep20', 'btnCopyBep20')">
               <i class="fa-regular fa-copy"></i> Copy BEP20 Address
             </button>
           </div>
@@ -330,11 +363,9 @@
             <canvas id="trc20QrCanvas" class="qr-canvas"></canvas>
           </div>
           <div class="address-display-box">
-            <div class="address-label">
-              <span>Deposit Address (TRC20 - TRON USDT)</span>
-            </div>
-            <span class="address-val" id="addrTrc20">T...</span>
-            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrTrc20')">
+            <div class="address-label">Deposit Address (TRC20 - TRON USDT):</div>
+            <span class="address-val" id="addrTrc20">TYasdf123456789TronUSDTAddress9988</span>
+            <button class="btn btn-secondary" id="btnCopyTrc20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrTrc20', 'btnCopyTrc20')">
               <i class="fa-regular fa-copy"></i> Copy TRC20 Address
             </button>
           </div>
@@ -346,11 +377,9 @@
             <canvas id="erc20QrCanvas" class="qr-canvas"></canvas>
           </div>
           <div class="address-display-box">
-            <div class="address-label">
-              <span>Deposit Address (ERC20 - Ethereum USDT)</span>
-            </div>
-            <span class="address-val" id="addrErc20">0x...</span>
-            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrErc20')">
+            <div class="address-label">Deposit Address (ERC20 - Ethereum USDT):</div>
+            <span class="address-val" id="addrErc20">0x386Ac338C488F61a9B4810fe17Fa2a78BE456108</span>
+            <button class="btn btn-secondary" id="btnCopyErc20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrErc20', 'btnCopyErc20')">
               <i class="fa-regular fa-copy"></i> Copy ERC20 Address
             </button>
           </div>
@@ -392,11 +421,19 @@
     let currentOrder = null;
     let activeNetwork = 'bpay';
 
-    const fallbackWallets = {
+    const defaultAddresses = {
       bep20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
       trc20: 'TYasdf123456789TronUSDTAddress9988',
       erc20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
     };
+
+    function showToast(text) {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toastMsg');
+      m.innerText = text;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
 
     function switchNetwork(net) {
       activeNetwork = net;
@@ -410,6 +447,47 @@
           else btn.classList.remove('active');
         }
       });
+
+      // Redraw the active network canvas now that it is visible
+      renderActiveCanvas(net);
+    }
+
+    function renderActiveCanvas(net) {
+      if (!currentOrder) return;
+      const wallets = currentOrder.cryptoWallets || defaultAddresses;
+
+      if (net === 'bpay') {
+        const payTarget = currentOrder.deeplink || currentOrder.checkoutUrl || window.location.href;
+        QRCode.toCanvas(document.getElementById('bpayQrCanvas'), payTarget, {
+          width: 190,
+          margin: 1,
+          color: { dark: '#0b0e11', light: '#f0b90b' }
+        });
+      } else if (net === 'bep20') {
+        const addr = (wallets.bep20 && wallets.bep20.length > 5) ? wallets.bep20 : defaultAddresses.bep20;
+        document.getElementById('addrBep20').innerText = addr;
+        QRCode.toCanvas(document.getElementById('bep20QrCanvas'), addr, {
+          width: 190,
+          margin: 1,
+          color: { dark: '#0b0e11', light: '#ffffff' }
+        });
+      } else if (net === 'trc20') {
+        const addr = (wallets.trc20 && wallets.trc20.length > 5) ? wallets.trc20 : defaultAddresses.trc20;
+        document.getElementById('addrTrc20').innerText = addr;
+        QRCode.toCanvas(document.getElementById('trc20QrCanvas'), addr, {
+          width: 190,
+          margin: 1,
+          color: { dark: '#0b0e11', light: '#ffffff' }
+        });
+      } else if (net === 'erc20') {
+        const addr = (wallets.erc20 && wallets.erc20.length > 5) ? wallets.erc20 : defaultAddresses.erc20;
+        document.getElementById('addrErc20').innerText = addr;
+        QRCode.toCanvas(document.getElementById('erc20QrCanvas'), addr, {
+          width: 190,
+          margin: 1,
+          color: { dark: '#0b0e11', light: '#ffffff' }
+        });
+      }
     }
 
     async function loadOrder() {
@@ -425,24 +503,25 @@
             showSuccess(currentOrder);
           }
         } else {
-          // Fallback rendering so the page never stays in loading state
-          renderOrder({
+          currentOrder = {
             merchantTradeNo: tradeNo,
             goodsName: 'Payment Order',
             orderAmount: '5.00',
             currency: 'USDT',
-            cryptoWallets: fallbackWallets,
-          });
+            cryptoWallets: defaultAddresses,
+          };
+          renderOrder(currentOrder);
         }
       } catch (err) {
         console.error('Error loading order:', err);
-        renderOrder({
+        currentOrder = {
           merchantTradeNo: tradeNo,
           goodsName: 'Payment Order',
           orderAmount: '5.00',
           currency: 'USDT',
-          cryptoWallets: fallbackWallets,
-        });
+          cryptoWallets: defaultAddresses,
+        };
+        renderOrder(currentOrder);
       }
     }
 
@@ -451,38 +530,66 @@
       document.getElementById('orderAmount').innerText = order.orderAmount || '0.00';
       document.getElementById('currency').innerText = order.currency || 'USDT';
 
-      // 1. Binance Pay QR (Generated client-side onto Canvas)
-      const payTarget = order.deeplink || order.checkoutUrl || window.location.href;
-      document.getElementById('binanceDeeplinkBtn').href = payTarget;
-
-      QRCode.toCanvas(document.getElementById('bpayQrCanvas'), payTarget, {
-        width: 190,
-        margin: 1,
-        color: { dark: '#0b0e11', light: '#f0b90b' }
-      }, (err) => {
-        if (err) console.warn('QR Render error:', err);
-      });
-
-      // 2. Multi-chain addresses
-      const wallets = order.cryptoWallets || fallbackWallets;
-      const bep20Addr = wallets.bep20 || fallbackWallets.bep20;
-      const trc20Addr = wallets.trc20 || fallbackWallets.trc20;
-      const erc20Addr = wallets.erc20 || fallbackWallets.erc20;
+      const wallets = order.cryptoWallets || defaultAddresses;
+      const bep20Addr = (wallets.bep20 && wallets.bep20.length > 5) ? wallets.bep20 : defaultAddresses.bep20;
+      const trc20Addr = (wallets.trc20 && wallets.trc20.length > 5) ? wallets.trc20 : defaultAddresses.trc20;
+      const erc20Addr = (wallets.erc20 && wallets.erc20.length > 5) ? wallets.erc20 : defaultAddresses.erc20;
 
       document.getElementById('addrBep20').innerText = bep20Addr;
       document.getElementById('addrTrc20').innerText = trc20Addr;
       document.getElementById('addrErc20').innerText = erc20Addr;
 
-      // Render Canvases for BEP20, TRC20, ERC20
-      QRCode.toCanvas(document.getElementById('bep20QrCanvas'), bep20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#f0b90b' } });
-      QRCode.toCanvas(document.getElementById('trc20QrCanvas'), trc20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#ffffff' } });
-      QRCode.toCanvas(document.getElementById('erc20QrCanvas'), erc20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#61affe' } });
+      document.getElementById('binanceDeeplinkBtn').href = order.deeplink || order.checkoutUrl || window.location.href;
+
+      renderActiveCanvas(activeNetwork);
     }
 
-    function copyAddr(elemId) {
-      const text = document.getElementById(elemId).innerText;
-      navigator.clipboard.writeText(text);
-      alert('Copied address to clipboard: ' + text);
+    function copyAddressText(elementId, btnId) {
+      const text = document.getElementById(elementId).innerText.trim();
+      
+      // Fallback cross-browser copy mechanism
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => {
+          showCopyFeedback(btnId, text);
+        }).catch(() => {
+          fallbackCopy(text, btnId);
+        });
+      } else {
+        fallbackCopy(text, btnId);
+      }
+    }
+
+    function fallbackCopy(text, btnId) {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.opacity = '0';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showCopyFeedback(btnId, text);
+      } catch (err) {
+        prompt('Copy address manually:', text);
+      }
+      document.body.removeChild(textArea);
+    }
+
+    function showCopyFeedback(btnId, text) {
+      showToast('✅ Address copied to clipboard!');
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        btn.style.background = 'var(--success)';
+        btn.style.color = '#0b0e11';
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.style.background = '#2b313a';
+          btn.style.color = '#fff';
+        }, 2000);
+      }
     }
 
     async function submitTxHash() {
