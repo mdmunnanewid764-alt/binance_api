@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
 import { supabaseService } from './supabase.js';
+import { config } from '../config/env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +25,7 @@ const initialData = {
 class Database {
   constructor() {
     this.data = this.load();
+    this.seedAdmin();
   }
 
   load() {
@@ -45,6 +48,33 @@ class Database {
     }
   }
 
+  async seedAdmin() {
+    const adminEmail = config.admin.email;
+    const existing = Object.values(this.data.users).find(u => u.email === adminEmail);
+    if (!existing) {
+      const salt = bcrypt.genSaltSync(10);
+      const passwordHash = bcrypt.hashSync(config.admin.password, salt);
+      const adminId = 'admin_root';
+      this.data.users[adminId] = {
+        id: adminId,
+        email: adminEmail,
+        name: 'Super Admin',
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        isApproved: true,
+        passwordHash,
+        binanceConfig: { apiKey: '', secretKey: '', isConnected: false },
+        telegramConfig: { botToken: '', isActive: false, products: [] },
+        gatewayApiKey: 'bg_live_super_admin',
+        gatewayApiSecret: 'sec_admin_root_key',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      this.save();
+      console.log(`👑 Super Admin initialized: ${adminEmail} (Password: ${config.admin.password})`);
+    }
+  }
+
   // --- Users ---
   createUser(user) {
     const id = user.id || `usr_${Date.now()}`;
@@ -53,8 +83,9 @@ class Database {
       email: user.email.toLowerCase(),
       name: user.name || 'Merchant',
       passwordHash: user.passwordHash,
-      status: 'ACTIVE',
-      isApproved: true, // Instant automatic approval - No admin wait required!
+      role: user.role || 'MERCHANT',
+      status: user.status || 'PENDING_APPROVAL', // PENDING_APPROVAL, ACTIVE, REJECTED
+      isApproved: user.isApproved || false, // Requires Admin Approval
       binanceConfig: user.binanceConfig || {
         apiKey: '',
         secretKey: '',
@@ -118,8 +149,35 @@ class Database {
     return this.data.users[id];
   }
 
+  approveUser(id) {
+    return this.updateUser(id, {
+      status: 'ACTIVE',
+      isApproved: true,
+      approvedAt: new Date().toISOString(),
+    });
+  }
+
+  rejectUser(id) {
+    return this.updateUser(id, {
+      status: 'REJECTED',
+      isApproved: false,
+      rejectedAt: new Date().toISOString(),
+    });
+  }
+
+  deleteUser(id) {
+    if (this.data.users[id]) {
+      delete this.data.users[id];
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
   listUsers() {
-    return Object.values(this.data.users);
+    return Object.values(this.data.users).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   // --- Orders ---

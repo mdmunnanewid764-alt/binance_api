@@ -23,14 +23,27 @@ export function authenticateToken(req, res, next) {
     if (!user) {
       return res.status(404).json({ success: false, error: 'User account not found' });
     }
+
+    if (!user.isApproved || user.status !== 'ACTIVE') {
+      return res.status(403).json({ success: false, error: 'Account is pending admin approval or inactive' });
+    }
+
     req.user = user;
     next();
   });
 }
 
+// Middleware for Super Admin only
+export function requireAdmin(req, res, next) {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ success: false, error: 'Admin access required' });
+  }
+  next();
+}
+
 /**
  * POST /api/v1/auth/register
- * Register a new merchant user
+ * Register a new merchant user (Requires Admin Approval)
  */
 authRouter.post('/register', async (req, res) => {
   try {
@@ -46,7 +59,7 @@ authRouter.post('/register', async (req, res) => {
 
     const existingUser = db.getUserByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ success: false, error: 'Email is already registered. Please login.' });
+      return res.status(400).json({ success: false, error: 'Email is already registered. Please log in.' });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -56,17 +69,18 @@ authRouter.post('/register', async (req, res) => {
       email,
       name: name || email.split('@')[0],
       passwordHash,
+      role: 'MERCHANT',
+      status: 'PENDING_APPROVAL',
+      isApproved: false, // Requires Admin Approval
     });
-
-    const token = jwt.sign({ userId: newUser.id, email: newUser.email }, config.jwtSecret, { expiresIn: '7d' });
 
     const safeUser = { ...newUser };
     delete safeUser.passwordHash;
 
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully',
-      token,
+      pendingApproval: true,
+      message: 'Registration successful! Your account is currently pending admin approval. You will be able to log in once activated by the admin.',
       user: safeUser,
     });
   } catch (error) {
@@ -77,7 +91,7 @@ authRouter.post('/register', async (req, res) => {
 
 /**
  * POST /api/v1/auth/login
- * Login existing merchant user
+ * Login merchant or admin user
  */
 authRouter.post('/login', async (req, res) => {
   try {
@@ -97,7 +111,27 @@ authRouter.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, config.jwtSecret, { expiresIn: '7d' });
+    // Check Admin Approval
+    if (!user.isApproved || user.status === 'PENDING_APPROVAL') {
+      return res.status(403).json({
+        success: false,
+        pendingApproval: true,
+        error: '⏳ Your account is awaiting admin approval. Please contact the administrator to activate your account.',
+      });
+    }
+
+    if (user.status === 'REJECTED') {
+      return res.status(403).json({
+        success: false,
+        error: '❌ Your account registration has been rejected by the administrator.',
+      });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      config.jwtSecret,
+      { expiresIn: '7d' }
+    );
 
     const safeUser = { ...user };
     delete safeUser.passwordHash;

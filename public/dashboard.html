@@ -23,6 +23,7 @@
       --danger: #f6465d;
       --info: #229ed9;
       --supabase-green: #3ecf8e;
+      --admin-purple: #a855f7;
     }
 
     * {
@@ -108,6 +109,11 @@
       font-weight: 700;
     }
 
+    .nav-item-admin button.active {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--admin-purple);
+    }
+
     .user-profile-box {
       background: #1e222b;
       border: 1px solid var(--border);
@@ -125,6 +131,9 @@
     .user-name {
       font-weight: 700;
       color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .user-email {
@@ -184,23 +193,12 @@
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: #0b0e11;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
-    }
-
-    .btn-secondary {
-      background: #2b313a;
-      color: #fff;
-    }
-
-    .btn-secondary:hover {
-      background: #39414d;
-    }
+    .btn-primary { background: var(--primary); color: #0b0e11; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #2b313a; color: #fff; }
+    .btn-secondary:hover { background: #39414d; }
+    .btn-success { background: var(--success); color: #0b0e11; }
+    .btn-danger { background: var(--danger); color: #fff; }
 
     /* Live Binance Balance Card */
     .balance-banner {
@@ -256,14 +254,8 @@
       gap: 8px;
     }
 
-    .asset-chip strong {
-      color: #fff;
-    }
-
-    .asset-chip span {
-      color: var(--primary);
-      font-weight: 600;
-    }
+    .asset-chip strong { color: #fff; }
+    .asset-chip span { color: var(--primary); font-weight: 600; }
 
     /* Stats Grid */
     .stats-grid {
@@ -312,32 +304,10 @@
       gap: 10px;
     }
 
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .form-control {
-      width: 100%;
-      background: #0b0e11;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: #fff;
-      padding: 12px 14px;
-      font-size: 14px;
-    }
-
-    .form-control:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .form-control { width: 100%; background: #0b0e11; border: 1px solid var(--border); border-radius: 10px; color: #fff; padding: 12px 14px; font-size: 14px; }
+    .form-control:focus { outline: none; border-color: var(--primary); }
 
     .key-display {
       background: #0b0e11;
@@ -352,22 +322,9 @@
     }
 
     /* Tables */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th, td {
-      padding: 12px 14px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      color: var(--text-muted);
-      font-weight: 600;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-weight: 600; }
 
     .badge {
       padding: 4px 8px;
@@ -377,8 +334,10 @@
       display: inline-block;
     }
 
-    .badge-PAID, .badge-SUCCESS { background: rgba(14, 203, 129, 0.2); color: var(--success); }
-    .badge-INITIAL, .badge-PENDING { background: rgba(240, 185, 11, 0.2); color: var(--primary); }
+    .badge-PAID, .badge-ACTIVE, .badge-SUCCESS { background: rgba(14, 203, 129, 0.2); color: var(--success); }
+    .badge-INITIAL, .badge-PENDING, .badge-PENDING_APPROVAL { background: rgba(240, 185, 11, 0.2); color: var(--primary); }
+    .badge-REJECTED { background: rgba(246, 70, 93, 0.2); color: var(--danger); }
+    .badge-ADMIN { background: rgba(168, 85, 247, 0.2); color: var(--admin-purple); }
 
     .badge-db {
       background: rgba(62, 207, 142, 0.15);
@@ -455,13 +414,22 @@
             <i class="fa-solid fa-list-check"></i> Orders & Invoices
           </button>
         </li>
+        <!-- Admin-only Tab -->
+        <li class="nav-item nav-item-admin" id="navItemAdmin" style="display: none;">
+          <button id="tabNavAdmin" onclick="showTab('admin')" style="color: var(--admin-purple);">
+            <i class="fa-solid fa-user-shield"></i> User Approvals <span id="pendingCountBadge" class="badge badge-PENDING_APPROVAL" style="margin-left: auto; font-size: 10px;">0</span>
+          </button>
+        </li>
       </ul>
     </div>
 
     <div>
       <div class="user-profile-box">
         <div class="user-info">
-          <div class="user-name" id="profileName">Merchant</div>
+          <div class="user-name">
+            <span id="profileName">Merchant</span>
+            <span id="profileRoleBadge" class="badge" style="font-size: 9px; display: none;"></span>
+          </div>
           <div class="user-email" id="profileEmail">...</div>
         </div>
         <button class="btn-logout" title="Log Out" onclick="logout()">
@@ -480,7 +448,7 @@
       </div>
       <div class="header-actions">
         <div class="badge-db" id="dbStatusBadge">
-          <i class="fa-solid fa-database"></i> <span id="dbStatusText">Cloud Database Sync</span>
+          <i class="fa-solid fa-database"></i> <span id="dbStatusText">Database Sync</span>
         </div>
         <a href="/docs" target="_blank" class="btn btn-secondary">
           <i class="fa-solid fa-book"></i> API Docs
@@ -560,7 +528,7 @@
       <div class="card" style="max-width: 700px;">
         <h3 class="card-title"><i class="fa-solid fa-link" style="color: var(--primary);"></i> Connect Binance Pay Merchant Account</h3>
         <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
-          Enter your merchant API credentials from the <a href="https://merchant.binance.com" target="_blank" style="color: var(--primary);">Binance Merchant Portal</a>. All orders created via your API key or Telegram Bot will be received directly into your Binance wallet, and your balance will be updated in real-time!
+          Enter your merchant API credentials from the <a href="https://merchant.binance.com" target="_blank" style="color: var(--primary);">Binance Merchant Portal</a>. All orders created via your API key or Telegram Bot will deposit directly into your Binance wallet!
         </p>
 
         <form onsubmit="handleSaveBinance(event)">
@@ -626,7 +594,7 @@
       <div class="card">
         <h3 class="card-title"><i class="fa-brands fa-telegram" style="color: var(--info);"></i> Connect Your Telegram Bot</h3>
         <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
-          Create a bot via <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> and paste the Bot Token here. Your bot will automatically sell products with Binance Pay and deposit funds to your Binance wallet!
+          Create a bot via <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> and paste the Bot Token here. Your bot will automatically sell products with Binance Pay!
         </p>
 
         <div style="max-width: 650px;">
@@ -646,7 +614,6 @@
           <i class="fa-solid fa-boxes-stacked"></i> Products Catalogue (Bot Store Menu)
         </h3>
 
-        <!-- Add product form -->
         <div style="background: #23272e; padding: 18px; border-radius: 12px; margin-bottom: 20px; max-width: 750px;">
           <h4 style="font-size: 14px; margin-bottom: 12px;">Add Product to Bot:</h4>
           <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -740,6 +707,42 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 7: Super Admin Panel -->
+    <div id="sectionAdmin" style="display: none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 class="card-title" style="margin-bottom: 0; color: var(--admin-purple);">
+            <i class="fa-solid fa-user-shield"></i> Merchant Approval Management
+          </h3>
+          <button class="btn btn-secondary" onclick="fetchAdminUsers()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh List
+          </button>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+          Review and approve newly registered merchants. Users cannot log in or use the API until you approve their account.
+        </p>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>User / Business</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Registered At</th>
+                <th>Admin Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTbody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading users list...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 
   <div id="toast" class="toast"></div>
@@ -761,7 +764,7 @@
     }
 
     function showTab(tab) {
-      const tabs = ['overview', 'binance', 'transactions', 'bot', 'api', 'orders'];
+      const tabs = ['overview', 'binance', 'transactions', 'bot', 'api', 'orders', 'admin'];
       tabs.forEach(t => {
         const sec = document.getElementById(`section${t.charAt(0).toUpperCase() + t.slice(1)}`);
         const nav = document.getElementById(`tabNav${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -779,6 +782,7 @@
         bot: ['Telegram Bot Integration', 'Automate crypto sales inside Telegram'],
         api: ['Gateway API Keys', 'Credentials for website & external app integration'],
         orders: ['Payment Orders', 'Complete transaction records & statuses'],
+        admin: ['Admin Approval Panel', 'Authorize or reject pending merchant registrations'],
       };
 
       document.getElementById('pageHeading').innerText = titles[tab][0];
@@ -786,6 +790,8 @@
 
       if (tab === 'transactions') {
         fetchLiveBinanceTransactions();
+      } else if (tab === 'admin') {
+        fetchAdminUsers();
       }
     }
 
@@ -807,7 +813,7 @@
         // Fetch DB cloud status
         fetchDatabaseStatus();
 
-        // Load stats & live balance
+        // Load stats
         const statsRes = await fetch('/api/v1/merchant/stats', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -818,8 +824,138 @@
 
         // Fetch Live Binance Balance
         fetchLiveBinanceBalance();
+
+        // If Admin, check pending users
+        if (currentUser.role === 'ADMIN') {
+          document.getElementById('navItemAdmin').style.display = 'block';
+          fetchAdminUsersCount();
+        }
       } catch (err) {
         console.error('Dashboard load error:', err);
+      }
+    }
+
+    function renderUser(u) {
+      document.getElementById('profileName').innerText = u.name;
+      document.getElementById('profileEmail').innerText = u.email;
+
+      if (u.role === 'ADMIN') {
+        const badge = document.getElementById('profileRoleBadge');
+        badge.className = 'badge badge-ADMIN';
+        badge.innerText = 'ADMIN';
+        badge.style.display = 'inline-block';
+      }
+
+      if (u.binanceConfig) {
+        document.getElementById('binanceApiKey').value = u.binanceConfig.apiKey || '';
+        document.getElementById('binanceSecretKey').value = u.binanceConfig.secretKey || '';
+        document.getElementById('binanceMerchantId').value = u.binanceConfig.merchantId || '';
+
+        const statusEl = document.getElementById('statBinanceStatus');
+        if (u.binanceConfig.isConnected) {
+          statusEl.innerHTML = '<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> Connected</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Disconnected</span>';
+        }
+      }
+
+      if (u.telegramConfig) {
+        document.getElementById('tgBotToken').value = u.telegramConfig.botToken || '';
+        renderBotProducts(u.telegramConfig.products || []);
+      }
+
+      document.getElementById('displayApiKey').innerText = u.gatewayApiKey || 'N/A';
+      rawSecret = u.gatewayApiSecret || '';
+    }
+
+    async function fetchAdminUsersCount() {
+      try {
+        const res = await fetch('/api/v1/admin/overview', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('pendingCountBadge').innerText = data.stats.pendingApprovals;
+        }
+      } catch (e) {}
+    }
+
+    async function fetchAdminUsers() {
+      const tbody = document.getElementById('adminUsersTbody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</td></tr>';
+
+      try {
+        const res = await fetch('/api/v1/admin/users', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.success && data.users) {
+          tbody.innerHTML = data.users.map(u => `
+            <tr>
+              <td><strong>${u.name}</strong></td>
+              <td>${u.email}</td>
+              <td><span class="badge badge-${u.role}">${u.role}</span></td>
+              <td><span class="badge badge-${u.status}">${u.status}</span></td>
+              <td style="font-size: 12px; color: var(--text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td>
+              <td>
+                ${u.role !== 'ADMIN' ? `
+                  ${u.status !== 'ACTIVE' ? `
+                    <button class="btn btn-success" style="padding: 4px 10px; font-size: 11px; margin-right: 4px;" onclick="approveUser('${u.id}')">
+                      <i class="fa-solid fa-check"></i> Approve
+                    </button>
+                  ` : ''}
+                  ${u.status !== 'REJECTED' ? `
+                    <button class="btn btn-danger" style="padding: 4px 10px; font-size: 11px;" onclick="rejectUser('${u.id}')">
+                      <i class="fa-solid fa-xmark"></i> Reject
+                    </button>
+                  ` : ''}
+                ` : '<span style="color: var(--text-muted); font-size: 11px;">Primary Admin</span>'}
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function approveUser(userId) {
+      try {
+        const res = await fetch(`/api/v1/admin/approve/${userId}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ User approved & activated!');
+          fetchAdminUsers();
+          fetchAdminUsersCount();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function rejectUser(userId) {
+      if (!confirm('Are you sure you want to reject this user registration?')) return;
+      try {
+        const res = await fetch(`/api/v1/admin/reject/${userId}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('User registration rejected.');
+          fetchAdminUsers();
+          fetchAdminUsersCount();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
       }
     }
 
@@ -904,32 +1040,6 @@
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center;">Error: ${err.message}</td></tr>`;
       }
-    }
-
-    function renderUser(u) {
-      document.getElementById('profileName').innerText = u.name;
-      document.getElementById('profileEmail').innerText = u.email;
-
-      if (u.binanceConfig) {
-        document.getElementById('binanceApiKey').value = u.binanceConfig.apiKey || '';
-        document.getElementById('binanceSecretKey').value = u.binanceConfig.secretKey || '';
-        document.getElementById('binanceMerchantId').value = u.binanceConfig.merchantId || '';
-
-        const statusEl = document.getElementById('statBinanceStatus');
-        if (u.binanceConfig.isConnected) {
-          statusEl.innerHTML = '<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> Connected</span>';
-        } else {
-          statusEl.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Disconnected</span>';
-        }
-      }
-
-      if (u.telegramConfig) {
-        document.getElementById('tgBotToken').value = u.telegramConfig.botToken || '';
-        renderBotProducts(u.telegramConfig.products || []);
-      }
-
-      document.getElementById('displayApiKey').innerText = u.gatewayApiKey || 'N/A';
-      rawSecret = u.gatewayApiSecret || '';
     }
 
     function renderStats(data) {

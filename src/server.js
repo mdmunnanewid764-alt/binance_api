@@ -6,6 +6,7 @@ import { config } from './config/env.js';
 import { paymentRouter } from './routes/paymentRoutes.js';
 import { authRouter } from './routes/authRoutes.js';
 import { merchantRouter } from './routes/merchantRoutes.js';
+import { adminRouter } from './routes/adminRoutes.js';
 import { botManager } from './bot/botManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -42,6 +43,7 @@ app.get('/api/v1/health', (req, res) => {
 // API Routes
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/merchant', merchantRouter);
+app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/payments', paymentRouter);
 
 // Frontend Page Routes
@@ -77,6 +79,7 @@ function startServer(port = config.port) {
     console.log(`🚀 Binance Pay Multi-Merchant Platform is running!`);
     console.log(`🌐 Server URL:        ${config.baseUrl}`);
     console.log(`🔐 Login Portal:      ${config.baseUrl}/login`);
+    console.log(`👑 Admin Account:     ${config.admin.email} (Approval Required)`);
     console.log(`📊 Dashboard:         ${config.baseUrl}/dashboard`);
     console.log(`📖 API Docs:          ${config.baseUrl}/docs`);
     console.log(`⚡ Health Endpoint:   ${config.baseUrl}/api/v1/health`);

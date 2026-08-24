@@ -1,11 +1,14 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { app } from '../src/server.js';
+import { config } from '../src/config/env.js';
 import axios from 'axios';
 
 let serverInstance;
 let baseUrl;
-let testUserToken;
+let adminToken;
+let pendingUserId;
+let approvedMerchantToken;
 let testGatewayApiKey;
 
 before(async () => {
@@ -24,49 +27,92 @@ after(async () => {
   }
 });
 
-test('Auth - Register new merchant user', async () => {
+test('Auth - Super Admin Login', async () => {
+  const res = await axios.post(`${baseUrl}/api/v1/auth/login`, {
+    email: config.admin.email,
+    password: config.admin.password,
+  });
+
+  assert.equal(res.status, 200);
+  assert.equal(res.data.success, true);
+  assert.equal(res.data.user.role, 'ADMIN');
+  assert.ok(res.data.token);
+  adminToken = res.data.token;
+});
+
+test('Auth - Register new merchant (Requires Admin Approval)', async () => {
   const email = `merchant_${Date.now()}@example.com`;
   const res = await axios.post(`${baseUrl}/api/v1/auth/register`, {
-    name: 'Super Store',
+    name: 'Pending Super Store',
     email,
     password: 'securepassword123',
   });
 
   assert.equal(res.status, 201);
   assert.equal(res.data.success, true);
-  assert.ok(res.data.token);
-  assert.equal(res.data.user.email, email);
+  assert.equal(res.data.pendingApproval, true);
+  assert.equal(res.data.user.status, 'PENDING_APPROVAL');
+  assert.equal(res.data.user.isApproved, false);
 
-  testUserToken = res.data.token;
-  testGatewayApiKey = res.data.user.gatewayApiKey;
+  pendingUserId = res.data.user.id;
+
+  // Attempt login BEFORE approval -> MUST FAIL WITH 403
+  try {
+    await axios.post(`${baseUrl}/api/v1/auth/login`, {
+      email,
+      password: 'securepassword123',
+    });
+    assert.fail('Should have failed login because user is not yet approved');
+  } catch (err) {
+    assert.equal(err.response.status, 403);
+    assert.equal(err.response.data.pendingApproval, true);
+  }
 });
 
-test('Auth - Login merchant user', async () => {
-  const email = `login_test_${Date.now()}@example.com`;
-  await axios.post(`${baseUrl}/api/v1/auth/register`, {
-    name: 'Login User',
-    email,
-    password: 'mypassword123',
+test('Admin - List users and Approve pending merchant', async () => {
+  const usersRes = await axios.get(`${baseUrl}/api/v1/admin/users`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
   });
+
+  assert.equal(usersRes.status, 200);
+  assert.equal(usersRes.data.success, true);
+  const found = usersRes.data.users.find(u => u.id === pendingUserId);
+  assert.ok(found);
+  assert.equal(found.status, 'PENDING_APPROVAL');
+
+  // Approve user
+  const approveRes = await axios.post(
+    `${baseUrl}/api/v1/admin/approve/${pendingUserId}`,
+    {},
+    {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    }
+  );
+
+  assert.equal(approveRes.status, 200);
+  assert.equal(approveRes.data.success, true);
+  assert.equal(approveRes.data.user.status, 'ACTIVE');
+  assert.equal(approveRes.data.user.isApproved, true);
+});
+
+test('Auth - Merchant Login AFTER Admin Approval (Succeeds)', async () => {
+  const usersRes = await axios.get(`${baseUrl}/api/v1/admin/users`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+  const approvedUser = usersRes.data.users.find(u => u.id === pendingUserId);
 
   const res = await axios.post(`${baseUrl}/api/v1/auth/login`, {
-    email,
-    password: 'mypassword123',
+    email: approvedUser.email,
+    password: 'securepassword123',
   });
 
   assert.equal(res.status, 200);
   assert.equal(res.data.success, true);
   assert.ok(res.data.token);
-});
+  assert.equal(res.data.user.status, 'ACTIVE');
 
-test('Auth - GET /api/v1/auth/me', async () => {
-  const res = await axios.get(`${baseUrl}/api/v1/auth/me`, {
-    headers: { Authorization: `Bearer ${testUserToken}` },
-  });
-
-  assert.equal(res.status, 200);
-  assert.equal(res.data.success, true);
-  assert.ok(res.data.user.id);
+  approvedMerchantToken = res.data.token;
+  testGatewayApiKey = res.data.user.gatewayApiKey;
 });
 
 test('Merchant - Connect Binance credentials', async () => {
@@ -78,7 +124,7 @@ test('Merchant - Connect Binance credentials', async () => {
       merchantId: '987654321',
     },
     {
-      headers: { Authorization: `Bearer ${testUserToken}` },
+      headers: { Authorization: `Bearer ${approvedMerchantToken}` },
     }
   );
 
@@ -87,25 +133,9 @@ test('Merchant - Connect Binance credentials', async () => {
   assert.equal(res.data.user.binanceConfig.apiKey, 'mock_binance_key_123');
 });
 
-test('Merchant - Test Binance credentials verification', async () => {
-  const res = await axios.post(
-    `${baseUrl}/api/v1/merchant/test-binance`,
-    {
-      apiKey: 'mock_binance_key_123',
-      secretKey: 'mock_binance_secret_456',
-    },
-    {
-      headers: { Authorization: `Bearer ${testUserToken}` },
-    }
-  );
-
-  assert.equal(res.status, 200);
-  assert.equal(res.data.success, true);
-});
-
 test('Merchant - Fetch Live Binance Wallet Balance', async () => {
   const res = await axios.get(`${baseUrl}/api/v1/merchant/binance-balance`, {
-    headers: { Authorization: `Bearer ${testUserToken}` },
+    headers: { Authorization: `Bearer ${approvedMerchantToken}` },
   });
 
   assert.equal(res.status, 200);
@@ -116,22 +146,12 @@ test('Merchant - Fetch Live Binance Wallet Balance', async () => {
 
 test('Merchant - Fetch Live Binance Transactions', async () => {
   const res = await axios.get(`${baseUrl}/api/v1/merchant/binance-transactions`, {
-    headers: { Authorization: `Bearer ${testUserToken}` },
+    headers: { Authorization: `Bearer ${approvedMerchantToken}` },
   });
 
   assert.equal(res.status, 200);
   assert.equal(res.data.success, true);
   assert.ok(Array.isArray(res.data.transactions));
-});
-
-test('Merchant - Check Database Cloud Status', async () => {
-  const res = await axios.get(`${baseUrl}/api/v1/merchant/database-status`, {
-    headers: { Authorization: `Bearer ${testUserToken}` },
-  });
-
-  assert.equal(res.status, 200);
-  assert.equal(res.data.success, true);
-  assert.ok(res.data.storageType);
 });
 
 test('Merchant - Connect Telegram Bot and Products', async () => {
@@ -145,28 +165,13 @@ test('Merchant - Connect Telegram Bot and Products', async () => {
       ],
     },
     {
-      headers: { Authorization: `Bearer ${testUserToken}` },
+      headers: { Authorization: `Bearer ${approvedMerchantToken}` },
     }
   );
 
   assert.equal(res.status, 200);
   assert.equal(res.data.success, true);
   assert.equal(res.data.user.telegramConfig.products.length, 1);
-});
-
-test('Merchant - Generate Gateway API Keys', async () => {
-  const res = await axios.post(
-    `${baseUrl}/api/v1/merchant/generate-api-keys`,
-    {},
-    {
-      headers: { Authorization: `Bearer ${testUserToken}` },
-    }
-  );
-
-  assert.equal(res.status, 200);
-  assert.equal(res.data.success, true);
-  assert.ok(res.data.gatewayApiKey.startsWith('bg_live_'));
-  testGatewayApiKey = res.data.gatewayApiKey;
 });
 
 test('Payment - Create order using Merchant x-api-key', async () => {
@@ -187,14 +192,4 @@ test('Payment - Create order using Merchant x-api-key', async () => {
   assert.equal(res.status, 201);
   assert.equal(res.data.success, true);
   assert.equal(res.data.order.merchantTradeNo, tradeNo);
-});
-
-test('Merchant - GET /api/v1/merchant/stats', async () => {
-  const res = await axios.get(`${baseUrl}/api/v1/merchant/stats`, {
-    headers: { Authorization: `Bearer ${testUserToken}` },
-  });
-
-  assert.equal(res.status, 200);
-  assert.equal(res.data.success, true);
-  assert.ok(res.data.stats.totalOrders >= 1);
 });

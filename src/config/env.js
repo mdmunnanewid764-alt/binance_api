@@ -6,6 +6,10 @@ export const config = {
   nodeEnv: process.env.NODE_ENV || 'development',
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   jwtSecret: process.env.JWT_SECRET || 'binance-gateway-super-secret-jwt-key-2026',
+  admin: {
+    email: (process.env.ADMIN_EMAIL || 'admin@binancepay.com').toLowerCase(),
+    password: process.env.ADMIN_PASSWORD || 'admin123456',
+  },
   databaseUrl: process.env.DATABASE_URL || '',
   binance: {
     apiKey: process.env.BINANCE_PAY_API_KEY || '',
