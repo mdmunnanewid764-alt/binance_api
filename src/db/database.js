@@ -48,12 +48,13 @@ class Database {
     }
   }
 
-  async seedAdmin() {
+  seedAdmin() {
     const adminEmail = config.admin.email;
-    const existing = Object.values(this.data.users).find(u => u.email === adminEmail);
+    const salt = bcrypt.genSaltSync(10);
+    const passwordHash = bcrypt.hashSync(config.admin.password, salt);
+    const existing = Object.values(this.data.users).find(u => u.email.toLowerCase() === adminEmail.toLowerCase());
+
     if (!existing) {
-      const salt = bcrypt.genSaltSync(10);
-      const passwordHash = bcrypt.hashSync(config.admin.password, salt);
       const adminId = 'admin_root';
       this.data.users[adminId] = {
         id: adminId,
@@ -71,7 +72,16 @@ class Database {
         updatedAt: new Date().toISOString(),
       };
       this.save();
-      console.log(`👑 Super Admin initialized: ${adminEmail} (Password: ${config.admin.password})`);
+      console.log(`👑 Super Admin account initialized: ${adminEmail}`);
+    } else {
+      // Ensure existing admin has updated password and active status
+      existing.passwordHash = passwordHash;
+      existing.role = 'ADMIN';
+      existing.status = 'ACTIVE';
+      existing.isApproved = true;
+      existing.updatedAt = new Date().toISOString();
+      this.save();
+      console.log(`👑 Super Admin account synced: ${adminEmail}`);
     }
   }
 
@@ -84,8 +94,8 @@ class Database {
       name: user.name || 'Merchant',
       passwordHash: user.passwordHash,
       role: user.role || 'MERCHANT',
-      status: user.status || 'PENDING_APPROVAL', // PENDING_APPROVAL, ACTIVE, REJECTED
-      isApproved: user.isApproved || false, // Requires Admin Approval
+      status: user.status || 'PENDING_APPROVAL',
+      isApproved: user.isApproved || false,
       binanceConfig: user.binanceConfig || {
         apiKey: '',
         secretKey: '',

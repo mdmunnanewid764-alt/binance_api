@@ -7,8 +7,8 @@ export const config = {
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   jwtSecret: process.env.JWT_SECRET || 'binance-gateway-super-secret-jwt-key-2026',
   admin: {
-    email: (process.env.ADMIN_EMAIL || 'admin@binancepay.com').toLowerCase(),
-    password: process.env.ADMIN_PASSWORD || 'admin123456',
+    email: (process.env.ADMIN_EMAIL || 'mdmunnanewid764@gmail.com').toLowerCase().trim(),
+    password: process.env.ADMIN_PASSWORD || 'Munna1234@@@',
   },
   databaseUrl: process.env.DATABASE_URL || '',
   binance: {
