@@ -4,7 +4,7 @@ dotenv.config();
 export const config = {
   port: parseInt(process.env.PORT || '3000', 10),
   nodeEnv: process.env.NODE_ENV || 'development',
-  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+  baseUrl: process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://binance-api-yrz4.onrender.com',
   jwtSecret: process.env.JWT_SECRET || 'binance-gateway-super-secret-jwt-key-2026',
   admin: {
     email: (process.env.ADMIN_EMAIL || 'mdmunnanewid764@gmail.com').toLowerCase().trim(),

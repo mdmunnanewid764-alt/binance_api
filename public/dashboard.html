@@ -1438,15 +1438,22 @@
           lastCreatedInvoice = data.order;
           showToast('🎉 Crypto Invoice created successfully!');
 
+          // Normalize checkout URL to current live domain
+          const liveCheckoutUrl = (data.order.checkoutUrl && !data.order.checkoutUrl.includes('localhost'))
+            ? data.order.checkoutUrl
+            : `${window.location.origin}/checkout/${data.order.merchantTradeNo}`;
+
+          lastCreatedInvoice.checkoutUrl = liveCheckoutUrl;
+
           // Show Result Box
           const resCard = document.getElementById('invResultCard');
           resCard.style.display = 'block';
           document.getElementById('invResultAmount').innerText = `${data.order.orderAmount} ${data.order.currency}`;
           document.getElementById('invResultGoods').innerText = data.order.goodsName;
-          document.getElementById('invResultUrl').innerText = data.order.checkoutUrl;
-          document.getElementById('invOpenBtn').href = data.order.checkoutUrl;
+          document.getElementById('invResultUrl').innerText = liveCheckoutUrl;
+          document.getElementById('invOpenBtn').href = liveCheckoutUrl;
 
-          const qrUrl = data.order.qrcodeLink || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data.order.checkoutUrl)}`;
+          const qrUrl = data.order.qrcodeLink || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(liveCheckoutUrl)}`;
           document.getElementById('invResultQr').src = qrUrl;
 
           // Reload stats & table
@@ -1470,7 +1477,8 @@
     }
 
     function copyDirectUrl(url) {
-      navigator.clipboard.writeText(url);
+      const liveUrl = (url && !url.includes('localhost')) ? url : `${window.location.origin}/checkout/${url.split('/').pop()}`;
+      navigator.clipboard.writeText(liveUrl);
       showToast('📋 Invoice Link copied to clipboard!');
     }
 

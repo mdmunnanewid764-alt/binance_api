@@ -82,11 +82,18 @@ paymentRouter.post('/create', async (req, res) => {
 
     const paymentData = binanceResponse.data;
 
+    const requestOrigin = req.headers.origin || (req.get('host') ? `${req.protocol}://${req.get('host')}` : null);
+    const effectiveBaseUrl = (config.baseUrl && !config.baseUrl.includes('localhost')) ? config.baseUrl : (requestOrigin || 'https://binance-api-yrz4.onrender.com');
+
     const cryptoWallets = merchantUser?.cryptoWallets || {
       bep20: '',
       trc20: '',
       erc20: '',
     };
+
+    const checkoutUrl = (paymentData.checkoutUrl && !paymentData.checkoutUrl.includes('localhost')) 
+      ? paymentData.checkoutUrl 
+      : `${effectiveBaseUrl}/checkout/${merchantTradeNo}`;
 
     // Save order in database
     const savedOrder = db.createOrder({
@@ -100,7 +107,7 @@ paymentRouter.post('/create', async (req, res) => {
       status: 'INITIAL',
       cryptoWallets,
       terminalType: paymentData.terminalType || terminalType,
-      checkoutUrl: paymentData.checkoutUrl || `${config.baseUrl}/checkout/${merchantTradeNo}`,
+      checkoutUrl,
       qrcodeLink: paymentData.qrcodeLink,
       qrContent: paymentData.qrContent,
       deeplink: paymentData.deeplink,
@@ -119,7 +126,7 @@ paymentRouter.post('/create', async (req, res) => {
         merchantTradeNo,
         prepayId: paymentData.prepayId,
         checkoutUrl: savedOrder.checkoutUrl,
-        hostedCheckoutUrl: `${config.baseUrl}/checkout/${merchantTradeNo}`,
+        hostedCheckoutUrl: `${effectiveBaseUrl}/checkout/${merchantTradeNo}`,
         cryptoWallets,
         qrcodeLink: paymentData.qrcodeLink,
         qrContent: paymentData.qrContent,
