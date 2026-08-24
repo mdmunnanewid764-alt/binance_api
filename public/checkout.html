@@ -513,45 +513,25 @@
       updateQrForNetwork(activeNetwork);
     }
 
-    async function handleBinanceAppPay() {
+    function handleBinanceAppPay() {
       if (!currentOrder) return;
       
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      
-      // 1. If it has a real Binance prepayId and is connected to live Binance
-      if (currentOrder.prepayId && !currentOrder.prepayId.startsWith('prep_') && !currentOrder.mock) {
-        if (isMobile) {
-          const deeplink = currentOrder.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${currentOrder.prepayId}`;
-          window.location.href = deeplink;
-        } else {
-          const binanceWebUrl = currentOrder.universalUrl || `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId}`;
-          window.open(binanceWebUrl, '_blank');
-        }
-        return;
-      }
+      const prepayId = currentOrder.prepayId || tradeNo;
 
-      // 2. If it's a Test/Sandbox or Direct simulation:
-      const btn = document.getElementById('btnPayBinanceApp');
-      const originalHtml = btn.innerHTML;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing Binance Pay...';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch(`/api/v1/payments/mock-pay/${tradeNo}`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success && data.order) {
-          showSuccess(data.order);
-          showToast('🎉 Binance Pay Payment Verified & Completed!');
-        } else {
-          const officialUrl = `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId || tradeNo}`;
-          window.open(officialUrl, '_blank');
-        }
-      } catch (err) {
-        const officialUrl = `https://pay.binance.com/en/checkout?prepayId=${currentOrder.prepayId || tradeNo}`;
-        window.open(officialUrl, '_blank');
-      } finally {
-        btn.innerHTML = originalHtml;
-        btn.disabled = false;
+      if (isMobile) {
+        // Direct launch into Binance Mobile App
+        const appDeeplink = currentOrder.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${prepayId}`;
+        window.location.href = appDeeplink;
+        
+        // Fallback to official web portal after timeout if app is not installed
+        setTimeout(() => {
+          window.location.href = `https://pay.binance.com/en/checkout?prepayId=${prepayId}`;
+        }, 2500);
+      } else {
+        // Open Binance Pay Official Web Checkout
+        const webUrl = currentOrder.universalUrl || `https://pay.binance.com/en/checkout?prepayId=${prepayId}`;
+        window.open(webUrl, '_blank');
       }
     }
 
