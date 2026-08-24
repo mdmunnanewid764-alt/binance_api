@@ -1,23 +1,35 @@
--- =======================================================
--- Supabase Schema for Binance Pay Gateway & Multi-Merchant Platform
--- Copy & Run this SQL in your Supabase SQL Editor
--- =======================================================
+-- ==========================================================
+-- Binance Pay Payment Gateway & Multi-Chain (Supabase Schema)
+-- Project Ref: ogfmjifaxvndydwnjvps
+-- ==========================================================
 
--- 1. Create Users Table
+-- 1. Users Table (Merchants & Admin)
 CREATE TABLE IF NOT EXISTS public.users (
   id TEXT PRIMARY KEY,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
   password_hash TEXT NOT NULL,
-  binance_config JSONB DEFAULT '{"apiKey":"","secretKey":"","merchantId":"","subMerchantId":"","isConnected":false}'::jsonb,
-  telegram_config JSONB DEFAULT '{"botToken":"","botUsername":"","isActive":false,"products":[]}'::jsonb,
+  role TEXT DEFAULT 'MERCHANT',
+  status TEXT DEFAULT 'PENDING_APPROVAL',
+  is_approved BOOLEAN DEFAULT false,
+  crypto_wallets JSONB DEFAULT '{}'::jsonb,
+  binance_config JSONB DEFAULT '{}'::jsonb,
+  telegram_config JSONB DEFAULT '{}'::jsonb,
   gateway_api_key TEXT UNIQUE,
   gateway_api_secret TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Create Orders Table
+-- Ensure columns exist if table was already created
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'MERCHANT';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'PENDING_APPROVAL';
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT false;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS crypto_wallets JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS binance_config JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS telegram_config JSONB DEFAULT '{}'::jsonb;
+
+-- 2. Orders Table (Binance Pay, BEP20, TRC20, ERC20)
 CREATE TABLE IF NOT EXISTS public.orders (
   merchant_trade_no TEXT PRIMARY KEY,
   user_id TEXT REFERENCES public.users(id) ON DELETE SET NULL,
@@ -26,8 +38,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
   currency TEXT DEFAULT 'USDT',
   goods_name TEXT NOT NULL,
   goods_detail TEXT,
-  status TEXT DEFAULT 'INITIAL', -- INITIAL, PENDING, PAID, CANCELED, EXPIRED, REFUNDED
+  status TEXT DEFAULT 'INITIAL',
   biz_status TEXT,
+  paid_network TEXT,
+  crypto_wallets JSONB DEFAULT '{}'::jsonb,
   transaction_id TEXT,
   terminal_type TEXT DEFAULT 'WEB',
   checkout_url TEXT,
@@ -45,7 +59,10 @@ CREATE TABLE IF NOT EXISTS public.orders (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Create Webhooks Log Table
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS paid_network TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS crypto_wallets JSONB DEFAULT '{}'::jsonb;
+
+-- 3. Webhook Events Log
 CREATE TABLE IF NOT EXISTS public.webhooks_log (
   id BIGSERIAL PRIMARY KEY,
   headers JSONB,
@@ -53,30 +70,18 @@ CREATE TABLE IF NOT EXISTS public.webhooks_log (
   received_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. Create Refunds Table
-CREATE TABLE IF NOT EXISTS public.refunds (
-  refund_request_id TEXT PRIMARY KEY,
-  merchant_trade_no TEXT REFERENCES public.orders(merchant_trade_no) ON DELETE CASCADE,
-  prepay_id TEXT,
-  refund_amount NUMERIC(18, 4),
-  currency TEXT DEFAULT 'USDT',
-  refund_reason TEXT,
-  response JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5. Create Telegram Users Table
+-- 4. Telegram Users
 CREATE TABLE IF NOT EXISTS public.telegram_users (
   chat_id TEXT PRIMARY KEY,
-  merchant_id TEXT,
   username TEXT,
   first_name TEXT,
   last_name TEXT,
+  merchant_id TEXT,
   last_seen TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for high performance
+-- Indices for rapid queries
 CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status ON public.orders(status);
-CREATE INDEX IF NOT EXISTS idx_orders_created_at ON public.orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_api_key ON public.users(gateway_api_key);

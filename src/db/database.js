@@ -26,6 +26,23 @@ class Database {
   constructor() {
     this.data = this.load();
     this.seedAdmin();
+    this.hydrateFromSupabase();
+  }
+
+  async hydrateFromSupabase() {
+    try {
+      const cloudData = await supabaseService.fetchAllData();
+      if (cloudData) {
+        this.data.users = { ...this.data.users, ...cloudData.users };
+        this.data.orders = { ...this.data.orders, ...cloudData.orders };
+        if (cloudData.telegramUsers) {
+          this.data.telegramUsers = { ...this.data.telegramUsers, ...cloudData.telegramUsers };
+        }
+        this.save();
+      }
+    } catch (err) {
+      console.warn('Supabase cloud hydration notice:', err.message);
+    }
   }
 
   load() {
