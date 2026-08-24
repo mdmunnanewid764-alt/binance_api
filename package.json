@@ -4,7 +4,11 @@
   "description": "Binance Pay Payment Gateway Web API Service for Web and Telegram Bot",
   "main": "src/server.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
+    "build": "npm install",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test tests/**/*.test.js"
