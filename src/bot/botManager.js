@@ -57,7 +57,7 @@ class BotManager {
       try {
         bot.stop();
       } catch (e) {
-        console.warn(`Error stopping bot for ${userId}:`, e.message);
+        // Ignore stop error
       }
       this.activeBots.delete(userId);
       console.log(`🛑 Stopped Telegram bot for user ${userId}`);
@@ -71,16 +71,37 @@ class BotManager {
       const bot = new Bot(token);
       this.activeBots.set(key, { bot, products, user, userId: key });
 
-      console.log(`🤖 Telegram Bot registered & polling for: [${key === 'system' ? 'System Bot' : (user?.name || key)}]`);
+      console.log(`🤖 Telegram Bot registered for: [${key === 'system' ? 'System Bot' : (user?.name || key)}]`);
 
       this.setupBotHandlers(bot, products, user, key);
-      bot.start().catch(err => {
-        console.warn(`Bot polling error for ${key}:`, err.message);
+
+      // Catch and handle polling errors (including 409 conflict gracefully)
+      bot.catch((err) => {
+        const error = err.error;
+        if (error?.error_code === 409 || error?.message?.includes('409 Conflict')) {
+          console.warn(`⚠️ [Bot ${key}] 409 Conflict: Another instance is currently polling this bot token. Waiting for previous instance to release...`);
+        } else {
+          console.warn(`[Bot ${key}] Notice:`, error?.message || error);
+        }
+      });
+
+      // Start bot with drop_pending_updates to clear conflict backlog
+      bot.start({
+        drop_pending_updates: true,
+        onStart: (botInfo) => {
+          console.log(`🚀 Telegram Bot @${botInfo.username} is now live and listening!`);
+        },
+      }).catch(err => {
+        if (err?.error_code === 409 || err?.message?.includes('409 Conflict')) {
+          console.warn(`⚠️ [Bot ${key}] 409 Conflict: Another instance is polling. It will auto-connect once the previous instance disconnects.`);
+        } else {
+          console.warn(`Bot start notice for ${key}:`, err.message);
+        }
       });
 
       return { success: true, message: 'Bot started successfully' };
     } catch (err) {
-      console.error(`❌ Failed to start bot for [${key}]:`, err.message);
+      console.error(`❌ Failed to register bot for [${key}]:`, err.message);
       return { success: false, error: err.message };
     }
   }
