@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merchant Portal Dashboard | Binance Pay Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #0b0e11;
+      --sidebar-bg: #14171d;
+      --card-bg: #181a20;
+      --border: #2b313a;
+      --primary: #f0b90b;
+      --primary-hover: #fcd535;
+      --text: #eaecef;
+      --text-muted: #848e9c;
+      --success: #0ecb81;
+      --danger: #f6465d;
+      --info: #229ed9;
+      --supabase-green: #3ecf8e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    aside {
+      width: 260px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand i {
+      color: var(--primary);
+      font-size: 26px;
+    }
+
+    .brand h2 {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .brand h2 span {
+      color: var(--primary);
+    }
+
+    .nav-menu {
+      list-style: none;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .nav-item button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .nav-item button:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #fff;
+    }
+
+    .nav-item button.active {
+      background: rgba(240, 185, 11, 0.15);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .user-profile-box {
+      background: #1e222b;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-info {
+      font-size: 13px;
+    }
+
+    .user-name {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .user-email {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+
+    .btn-logout {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 6px;
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      padding: 32px;
+      overflow-y: auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0b0e11;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #2b313a;
+      color: #fff;
+    }
+
+    .btn-secondary:hover {
+      background: #39414d;
+    }
+
+    /* Live Binance Balance Card */
+    .balance-banner {
+      background: linear-gradient(135deg, #1f232d 0%, #15181f 100%);
+      border: 1px solid #363d4a;
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .balance-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .balance-amount {
+      font-size: 34px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .balance-currency {
+      color: var(--primary);
+      font-size: 20px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+
+    .asset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .asset-chip {
+      background: #282e3a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .asset-chip strong {
+      color: #fff;
+    }
+
+    .asset-chip span {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #0b0e11;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .key-display {
+      background: #0b0e11;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: monospace;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .badge-PAID, .badge-SUCCESS { background: rgba(14, 203, 129, 0.2); color: var(--success); }
+    .badge-INITIAL, .badge-PENDING { background: rgba(240, 185, 11, 0.2); color: var(--primary); }
+
+    .badge-db {
+      background: rgba(62, 207, 142, 0.15);
+      border: 1px solid var(--supabase-green);
+      color: var(--supabase-green);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #181a20;
+      border: 1px solid var(--primary);
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      z-index: 100;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside>
+    <div>
+      <div class="brand">
+        <i class="fa-solid fa-coins"></i>
+        <h2>Binance <span>Pay</span></h2>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <button class="active" id="tabNavOverview" onclick="showTab('overview')">
+            <i class="fa-solid fa-chart-pie"></i> Overview
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="tabNavBinance" onclick="showTab('binance')">
+            <i class="fa-solid fa-link" style="color: var(--primary);"></i> Connect Binance
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="tabNavTransactions" onclick="showTab('transactions')">
+            <i class="fa-solid fa-receipt" style="color: var(--success);"></i> Live Transactions
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="tabNavBot" onclick="showTab('bot')">
+            <i class="fa-brands fa-telegram" style="color: var(--info);"></i> Telegram Bot
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="tabNavApi" onclick="showTab('api')">
+            <i class="fa-solid fa-key"></i> Gateway API Keys
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="tabNavOrders" onclick="showTab('orders')">
+            <i class="fa-solid fa-list-check"></i> Orders & Invoices
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="user-profile-box">
+        <div class="user-info">
+          <div class="user-name" id="profileName">Merchant</div>
+          <div class="user-email" id="profileEmail">...</div>
+        </div>
+        <button class="btn-logout" title="Log Out" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <header>
+      <div>
+        <h1 class="page-title" id="pageHeading">Merchant Overview</h1>
+        <p style="font-size: 13px; color: var(--text-muted);" id="pageSubHeading">Live Binance balance & payments</p>
+      </div>
+      <div class="header-actions">
+        <div class="badge-db" id="dbStatusBadge">
+          <i class="fa-solid fa-database"></i> <span id="dbStatusText">Cloud Database Sync</span>
+        </div>
+        <a href="/docs" target="_blank" class="btn btn-secondary">
+          <i class="fa-solid fa-book"></i> API Docs
+        </a>
+      </div>
+    </header>
+
+    <!-- TAB 1: Overview -->
+    <div id="sectionOverview">
+      <!-- Live Binance Balance Banner -->
+      <div class="balance-banner">
+        <div>
+          <div class="balance-label">
+            <i class="fa-solid fa-wallet" style="color: var(--primary);"></i> Live Binance Wallet Balance
+          </div>
+          <div>
+            <span class="balance-amount" id="liveBalanceAmount">--.--</span>
+            <span class="balance-currency">USDT</span>
+          </div>
+          <div class="asset-chips" id="assetChipsContainer">
+            <div class="asset-chip">Loading live assets...</div>
+          </div>
+        </div>
+        <div>
+          <button class="btn btn-primary" id="btnRefreshBalance" onclick="fetchLiveBinanceBalance()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Balance
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Store Sales (USDT) <i class="fa-solid fa-dollar-sign" style="color: var(--success);"></i></div>
+          <div class="stat-value" id="statVolume">0.00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Invoices <i class="fa-solid fa-bag-shopping" style="color: var(--primary);"></i></div>
+          <div class="stat-value" id="statOrders">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed Orders <i class="fa-solid fa-check-circle" style="color: var(--success);"></i></div>
+          <div class="stat-value" id="statCompleted">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Binance API Status <i class="fa-solid fa-shield-halved"></i></div>
+          <div class="stat-value" id="statBinanceStatus" style="font-size: 16px; margin-top: 6px;">
+            <span style="color: var(--text-muted);">Checking...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent Orders</h3>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Goods</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="overviewOrdersTbody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading recent orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: Connect Binance -->
+    <div id="sectionBinance" style="display: none;">
+      <div class="card" style="max-width: 700px;">
+        <h3 class="card-title"><i class="fa-solid fa-link" style="color: var(--primary);"></i> Connect Binance Pay Merchant Account</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+          Enter your merchant API credentials from the <a href="https://merchant.binance.com" target="_blank" style="color: var(--primary);">Binance Merchant Portal</a>. All orders created via your API key or Telegram Bot will be received directly into your Binance wallet, and your balance will be updated in real-time!
+        </p>
+
+        <form onsubmit="handleSaveBinance(event)">
+          <div class="form-group">
+            <label>Binance Pay Merchant API Key (Certificate SN)</label>
+            <input type="text" id="binanceApiKey" class="form-control" placeholder="e.g. 1a2b3c4d5e6f..." required />
+          </div>
+
+          <div class="form-group">
+            <label>Binance Pay Merchant Secret Key</label>
+            <input type="password" id="binanceSecretKey" class="form-control" placeholder="e.g. 9z8y7x6w5v4u..." required />
+          </div>
+
+          <div class="form-group">
+            <label>Sub-Merchant ID / Merchant ID (Optional)</label>
+            <input type="text" id="binanceMerchantId" class="form-control" placeholder="e.g. 987654321" />
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Save Credentials
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="testBinanceConnection()">
+              <i class="fa-solid fa-vial"></i> Test Connection
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: Live Binance Transactions -->
+    <div id="sectionTransactions" style="display: none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 class="card-title" style="margin-bottom: 0;"><i class="fa-solid fa-receipt" style="color: var(--success);"></i> Live Binance Transactions & Deposits</h3>
+          <button class="btn btn-secondary" onclick="fetchLiveBinanceTransactions()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Transactions
+          </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>TxID</th>
+                <th>Type</th>
+                <th>Asset</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="binanceTxTbody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading Binance transactions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: Telegram Bot -->
+    <div id="sectionBot" style="display: none;">
+      <div class="card">
+        <h3 class="card-title"><i class="fa-brands fa-telegram" style="color: var(--info);"></i> Connect Your Telegram Bot</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+          Create a bot via <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> and paste the Bot Token here. Your bot will automatically sell products with Binance Pay and deposit funds to your Binance wallet!
+        </p>
+
+        <div style="max-width: 650px;">
+          <div class="form-group">
+            <label>Telegram Bot Token</label>
+            <input type="text" id="tgBotToken" class="form-control" placeholder="123456789:ABCDefGhIJKlmNoPQRsTUVwxyZ" />
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-bottom: 28px;">
+            <button class="btn btn-primary" onclick="handleSaveBotToken()">
+              <i class="fa-solid fa-robot"></i> Save & Launch Bot
+            </button>
+          </div>
+        </div>
+
+        <h3 class="card-title" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
+          <i class="fa-solid fa-boxes-stacked"></i> Products Catalogue (Bot Store Menu)
+        </h3>
+
+        <!-- Add product form -->
+        <div style="background: #23272e; padding: 18px; border-radius: 12px; margin-bottom: 20px; max-width: 750px;">
+          <h4 style="font-size: 14px; margin-bottom: 12px;">Add Product to Bot:</h4>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="newProdName" class="form-control" placeholder="Product Name (e.g. VIP Pass)" />
+            <input type="number" step="0.01" id="newProdAmount" class="form-control" placeholder="Price (USDT)" />
+            <button class="btn btn-primary" style="justify-content: center;" onclick="addProduct()">
+              <i class="fa-solid fa-plus"></i> Add Item
+            </button>
+          </div>
+          <input type="text" id="newProdDesc" class="form-control" placeholder="Description / Benefits" />
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Price</th>
+                <th>Description</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="botProductsTbody">
+              <tr><td colspan="4" style="color: var(--text-muted);">No products defined yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: Gateway API Keys -->
+    <div id="sectionApi" style="display: none;">
+      <div class="card" style="max-width: 700px;">
+        <h3 class="card-title"><i class="fa-solid fa-key" style="color: var(--primary);"></i> Your Gateway API Credentials</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+          Use these credentials to create payments from your website or backend applications.
+        </p>
+
+        <div class="form-group">
+          <label>Merchant API Key (Header: <code>x-api-key</code>)</label>
+          <div class="key-display">
+            <span id="displayApiKey">...</span>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="copyText('displayApiKey')">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Merchant API Secret</label>
+          <div class="key-display">
+            <span id="displayApiSecret">••••••••••••••••••••</span>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="toggleSecret()">
+              <i class="fa-regular fa-eye"></i> Show
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top: 10px;" onclick="regenerateKeys()">
+          <i class="fa-solid fa-arrows-rotate"></i> Regenerate API Keys
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB 6: Orders -->
+    <div id="sectionOrders" style="display: none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 class="card-title" style="margin-bottom: 0;"><i class="fa-solid fa-list-check"></i> All Payment Orders</h3>
+          <button class="btn btn-secondary" onclick="loadDashboard()">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Goods</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Created At</th>
+                <th>Checkout</th>
+              </tr>
+            </thead>
+            <tbody id="allOrdersTbody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const token = localStorage.getItem('bg_token');
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    let currentUser = null;
+    let rawSecret = '';
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function showTab(tab) {
+      const tabs = ['overview', 'binance', 'transactions', 'bot', 'api', 'orders'];
+      tabs.forEach(t => {
+        const sec = document.getElementById(`section${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        const nav = document.getElementById(`tabNav${t.charAt(0).toUpperCase() + t.slice(1)}`);
+        if (sec) sec.style.display = (t === tab) ? 'block' : 'none';
+        if (nav) {
+          if (t === tab) nav.classList.add('active');
+          else nav.classList.remove('active');
+        }
+      });
+
+      const titles = {
+        overview: ['Merchant Overview', 'Live Binance balance & payments'],
+        binance: ['Binance Pay Connector', 'Connect your Binance Merchant credentials'],
+        transactions: ['Live Binance Transactions', 'Real-time deposits and wallet transactions'],
+        bot: ['Telegram Bot Integration', 'Automate crypto sales inside Telegram'],
+        api: ['Gateway API Keys', 'Credentials for website & external app integration'],
+        orders: ['Payment Orders', 'Complete transaction records & statuses'],
+      };
+
+      document.getElementById('pageHeading').innerText = titles[tab][0];
+      document.getElementById('pageSubHeading').innerText = titles[tab][1];
+
+      if (tab === 'transactions') {
+        fetchLiveBinanceTransactions();
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const userRes = await fetch('/api/v1/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const userData = await userRes.json();
+
+        if (!userData.success) {
+          logout();
+          return;
+        }
+
+        currentUser = userData.user;
+        renderUser(currentUser);
+
+        // Fetch DB cloud status
+        fetchDatabaseStatus();
+
+        // Load stats & live balance
+        const statsRes = await fetch('/api/v1/merchant/stats', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const statsData = await statsRes.json();
+        if (statsData.success) {
+          renderStats(statsData);
+        }
+
+        // Fetch Live Binance Balance
+        fetchLiveBinanceBalance();
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+      }
+    }
+
+    async function fetchDatabaseStatus() {
+      try {
+        const res = await fetch('/api/v1/merchant/database-status', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const badge = document.getElementById('dbStatusBadge');
+        const text = document.getElementById('dbStatusText');
+
+        if (data.supabaseConnected) {
+          badge.style.borderColor = 'var(--supabase-green)';
+          badge.style.color = 'var(--supabase-green)';
+          text.innerText = 'Supabase Cloud (Active)';
+        } else {
+          badge.style.borderColor = 'var(--text-muted)';
+          badge.style.color = 'var(--text-muted)';
+          text.innerText = 'Storage: Local Active';
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function fetchLiveBinanceBalance() {
+      const btn = document.getElementById('btnRefreshBalance');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+
+      try {
+        const res = await fetch('/api/v1/merchant/binance-balance', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('liveBalanceAmount').innerText = data.totalEstimatedUSDT || '0.00';
+          const container = document.getElementById('assetChipsContainer');
+
+          if (data.balances && data.balances.length > 0) {
+            container.innerHTML = data.balances.map(b => `
+              <div class="asset-chip">
+                <strong>${b.asset}</strong>: <span>${b.free || b.total}</span>
+              </div>
+            `).join('');
+          } else {
+            container.innerHTML = '<div class="asset-chip">0.00 USDT</div>';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load balance:', err);
+      } finally {
+        btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Balance';
+      }
+    }
+
+    async function fetchLiveBinanceTransactions() {
+      const tbody = document.getElementById('binanceTxTbody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Fetching transactions...</td></tr>';
+
+      try {
+        const res = await fetch('/api/v1/merchant/binance-transactions', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        if (data.success && data.transactions && data.transactions.length > 0) {
+          tbody.innerHTML = data.transactions.map(t => `
+            <tr>
+              <td style="font-family: monospace; font-size: 11px;">${t.id}</td>
+              <td><span class="badge" style="background: rgba(34, 158, 217, 0.2); color: var(--info);">${t.type}</span></td>
+              <td><strong>${t.asset}</strong></td>
+              <td><span style="color: var(--primary); font-weight: 700;">${t.amount}</span></td>
+              <td><span class="badge badge-SUCCESS">${t.status}</span></td>
+              <td style="font-size: 12px; color: var(--text-muted);">${new Date(t.time).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No transactions recorded yet.</td></tr>';
+        }
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--danger); text-align: center;">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    function renderUser(u) {
+      document.getElementById('profileName').innerText = u.name;
+      document.getElementById('profileEmail').innerText = u.email;
+
+      if (u.binanceConfig) {
+        document.getElementById('binanceApiKey').value = u.binanceConfig.apiKey || '';
+        document.getElementById('binanceSecretKey').value = u.binanceConfig.secretKey || '';
+        document.getElementById('binanceMerchantId').value = u.binanceConfig.merchantId || '';
+
+        const statusEl = document.getElementById('statBinanceStatus');
+        if (u.binanceConfig.isConnected) {
+          statusEl.innerHTML = '<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> Connected</span>';
+        } else {
+          statusEl.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Disconnected</span>';
+        }
+      }
+
+      if (u.telegramConfig) {
+        document.getElementById('tgBotToken').value = u.telegramConfig.botToken || '';
+        renderBotProducts(u.telegramConfig.products || []);
+      }
+
+      document.getElementById('displayApiKey').innerText = u.gatewayApiKey || 'N/A';
+      rawSecret = u.gatewayApiSecret || '';
+    }
+
+    function renderStats(data) {
+      document.getElementById('statVolume').innerText = data.stats.totalVolumeUSDT;
+      document.getElementById('statOrders').innerText = data.stats.totalOrders;
+      document.getElementById('statCompleted').innerText = data.stats.completedOrders;
+
+      const renderRow = (o) => `
+        <tr>
+          <td style="font-family: monospace; font-size: 12px;">${o.merchantTradeNo}</td>
+          <td>${o.goodsName}</td>
+          <td><strong>${o.orderAmount} ${o.currency}</strong></td>
+          <td><span class="badge badge-${o.status}">${o.status}</span></td>
+          <td style="font-size: 12px; color: var(--text-muted);">${new Date(o.createdAt).toLocaleString()}</td>
+          <td>
+            <a href="${o.checkoutUrl}" target="_blank" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;">
+              Pay
+            </a>
+          </td>
+        </tr>
+      `;
+
+      const tbodyOverview = document.getElementById('overviewOrdersTbody');
+      const tbodyAll = document.getElementById('allOrdersTbody');
+
+      if (!data.recentOrders || data.recentOrders.length === 0) {
+        tbodyOverview.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No orders created yet.</td></tr>';
+        tbodyAll.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No orders created yet.</td></tr>';
+      } else {
+        tbodyOverview.innerHTML = data.recentOrders.slice(0, 5).map(renderRow).join('');
+        tbodyAll.innerHTML = data.recentOrders.map(renderRow).join('');
+      }
+    }
+
+    function renderBotProducts(products) {
+      const tbody = document.getElementById('botProductsTbody');
+      if (!products || products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="color: var(--text-muted);">No products listed yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = products.map((p, idx) => `
+        <tr>
+          <td><strong>${p.name}</strong></td>
+          <td><span style="color: var(--primary); font-weight: 700;">${p.amount} ${p.currency || 'USDT'}</span></td>
+          <td style="color: var(--text-muted);">${p.desc || ''}</td>
+          <td>
+            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px; color: var(--danger);" onclick="deleteProduct(${idx})">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function handleSaveBinance(e) {
+      e.preventDefault();
+      const apiKey = document.getElementById('binanceApiKey').value;
+      const secretKey = document.getElementById('binanceSecretKey').value;
+      const merchantId = document.getElementById('binanceMerchantId').value;
+
+      try {
+        const res = await fetch('/api/v1/merchant/binance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ apiKey, secretKey, merchantId }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Binance credentials saved!');
+          loadDashboard();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function testBinanceConnection() {
+      const apiKey = document.getElementById('binanceApiKey').value;
+      const secretKey = document.getElementById('binanceSecretKey').value;
+
+      try {
+        showToast('Testing Binance connection...');
+        const res = await fetch('/api/v1/merchant/test-binance', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ apiKey, secretKey }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('🎉 Success: ' + data.message);
+          loadDashboard();
+        } else {
+          alert('❌ Connection Test Failed: ' + data.error);
+        }
+      } catch (err) {
+        alert('Test Error: ' + err.message);
+      }
+    }
+
+    async function handleSaveBotToken() {
+      const botToken = document.getElementById('tgBotToken').value;
+      try {
+        const res = await fetch('/api/v1/merchant/telegram-bot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            botToken,
+            isActive: true,
+            products: currentUser?.telegramConfig?.products || [],
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🤖 Telegram Bot registered & live!');
+          loadDashboard();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function addProduct() {
+      const name = document.getElementById('newProdName').value;
+      const amount = document.getElementById('newProdAmount').value;
+      const desc = document.getElementById('newProdDesc').value;
+
+      if (!name || !amount) {
+        return alert('Please provide product name and price');
+      }
+
+      const products = [...(currentUser?.telegramConfig?.products || [])];
+      products.push({
+        id: `prod_${Date.now()}`,
+        name,
+        amount: parseFloat(amount).toFixed(2),
+        currency: 'USDT',
+        desc,
+      });
+
+      await saveProducts(products);
+      document.getElementById('newProdName').value = '';
+      document.getElementById('newProdAmount').value = '';
+      document.getElementById('newProdDesc').value = '';
+    }
+
+    async function deleteProduct(index) {
+      const products = [...(currentUser?.telegramConfig?.products || [])];
+      products.splice(index, 1);
+      await saveProducts(products);
+    }
+
+    async function saveProducts(products) {
+      try {
+        const res = await fetch('/api/v1/merchant/telegram-bot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            botToken: currentUser?.telegramConfig?.botToken || '',
+            isActive: true,
+            products,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Products updated & synced with Bot!');
+          loadDashboard();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function regenerateKeys() {
+      if (!confirm('Are you sure you want to regenerate your Gateway API Keys?')) return;
+
+      try {
+        const res = await fetch('/api/v1/merchant/generate-api-keys', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🔑 New API Key generated!');
+          loadDashboard();
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function toggleSecret() {
+      const el = document.getElementById('displayApiSecret');
+      if (el.innerText.includes('•')) {
+        el.innerText = rawSecret;
+      } else {
+        el.innerText = '••••••••••••••••••••';
+      }
+    }
+
+    function copyText(elemId) {
+      const text = document.getElementById(elemId).innerText;
+      navigator.clipboard.writeText(text);
+      showToast('Copied to clipboard!');
+    }
+
+    function logout() {
+      localStorage.removeItem('bg_token');
+      localStorage.removeItem('bg_user');
+      window.location.href = '/login';
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

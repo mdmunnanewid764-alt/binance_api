@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binance Pay Gateway - Demo & Playground</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #0e1114;
+      --card-bg: #181a20;
+      --border: #2b313a;
+      --primary: #f0b90b;
+      --primary-hover: #fcd535;
+      --text: #eaecef;
+      --text-muted: #848e9c;
+      --success: #0ecb81;
+      --danger: #f6465d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand i {
+      color: var(--primary);
+      font-size: 32px;
+    }
+
+    .brand h1 {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .brand h1 span {
+      color: var(--primary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .product-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      background: #23272e;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .product-info h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .product-info p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .product-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0b0e11;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #0b0e11;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px 14px;
+      font-size: 14px;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-PAID {
+      background: rgba(14, 203, 129, 0.2);
+      color: var(--success);
+    }
+
+    .badge-INITIAL, .badge-PENDING {
+      background: rgba(240, 185, 11, 0.2);
+      color: var(--primary);
+    }
+
+    .badge-REFUNDED {
+      background: rgba(246, 70, 93, 0.2);
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="brand">
+        <i class="fa-solid fa-coins"></i>
+        <div>
+          <h1>Binance <span>Pay</span> Gateway Service</h1>
+          <p style="font-size: 12px; color: var(--text-muted);">Web API & Telegram Bot Payment Engine</p>
+        </div>
+      </div>
+      <div>
+        <a href="https://merchant.binance.com" target="_blank" class="btn" style="background: #2b313a; color: #fff;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Binance Merchant Docs
+        </a>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Demo Store -->
+      <div class="card">
+        <h2 class="card-title"><i class="fa-solid fa-bag-shopping" style="color: var(--primary);"></i> Demo Store Checkout</h2>
+        <div class="product-list">
+          <div class="product-item">
+            <div class="product-info">
+              <h4>🚀 Pro Subscription (1 Month)</h4>
+              <p>Instant activation with Binance Pay</p>
+            </div>
+            <div style="text-align: right;">
+              <div class="product-price">10.00 USDT</div>
+              <button class="btn btn-primary" style="margin-top: 6px;" onclick="createPayment('10.00', 'Pro Subscription (1 Month)')">
+                Buy Now
+              </button>
+            </div>
+          </div>
+
+          <div class="product-item">
+            <div class="product-info">
+              <h4>⚡ VIP Lifetime Pass</h4>
+              <p>One-time crypto payment</p>
+            </div>
+            <div style="text-align: right;">
+              <div class="product-price">49.00 USDT</div>
+              <button class="btn btn-primary" style="margin-top: 6px;" onclick="createPayment('49.00', 'VIP Lifetime Pass')">
+                Buy Now
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-muted);">Or Custom Amount:</h3>
+        <form onsubmit="handleCustomPay(event)">
+          <div class="form-group">
+            <label>Goods Name</label>
+            <input type="text" id="customName" class="form-control" value="Custom Order" required />
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 2;">
+              <label>Amount</label>
+              <input type="number" step="0.01" id="customAmount" class="form-control" value="5.00" required />
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Currency</label>
+              <select id="customCurrency" class="form-control">
+                <option value="USDT">USDT</option>
+                <option value="BUSD">BUSD</option>
+                <option value="BNB">BNB</option>
+                <option value="BTC">BTC</option>
+                <option value="ETH">ETH</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px;">
+            <i class="fa-solid fa-bolt"></i> Generate Binance Pay Invoice
+          </button>
+        </form>
+      </div>
+
+      <!-- Telegram Bot Guide & Integration -->
+      <div class="card">
+        <h2 class="card-title"><i class="fa-brands fa-telegram" style="color: #229ed9;"></i> Telegram Bot Integration</h2>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+          This service includes a built-in Telegram Bot engine that can sell products and receive Binance Pay payments right inside any Telegram chat or group.
+        </p>
+
+        <div style="background: #23272e; border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <h4 style="font-size: 14px; margin-bottom: 8px;">🚀 How to connect your Telegram Bot:</h4>
+          <ol style="font-size: 12px; color: var(--text-muted); padding-left: 18px; line-height: 1.8;">
+            <li>Open <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> on Telegram.</li>
+            <li>Create a new bot using <code>/newbot</code> and copy your bot token.</li>
+            <li>Add token to your <code>.env</code>: <code>TELEGRAM_BOT_TOKEN=123456:ABC-DEF...</code></li>
+            <li>Restart the service. Your bot will automatically start handling <code>/start</code>, <code>/buy</code>, and sending Binance Pay QR invoices!</li>
+          </ol>
+        </div>
+
+        <div style="background: rgba(240, 185, 11, 0.1); border: 1px dashed var(--primary); border-radius: 12px; padding: 14px;">
+          <h4 style="font-size: 13px; color: var(--primary); margin-bottom: 4px;"><i class="fa-solid fa-code"></i> Web API Endpoints:</h4>
+          <code style="font-size: 11px; color: #fff; display: block; line-height: 1.6;">
+            POST /api/v1/payments/create<br/>
+            GET &nbsp;/api/v1/payments/:orderId<br/>
+            POST /api/v1/payments/webhook<br/>
+            POST /api/v1/payments/refund<br/>
+            GET &nbsp;/api/v1/payments/stream/:orderId (SSE)
+          </code>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card" style="margin-top: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 class="card-title" style="margin-bottom: 0;"><i class="fa-solid fa-clock-rotate-left"></i> Recent Orders</h2>
+        <button class="btn" style="background: #2b313a; color: #fff; font-size: 12px;" onclick="loadOrders()">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Goods</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function createPayment(amount, name, currency = 'USDT') {
+      try {
+        const res = await fetch('/api/v1/payments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderAmount: amount,
+            currency: currency,
+            goodsName: name,
+            goodsDetail: `Order for ${name}`,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success && data.paymentData) {
+          window.location.href = data.paymentData.hostedCheckoutUrl;
+        } else {
+          alert('Error: ' + (data.error || 'Failed to create payment'));
+        }
+      } catch (err) {
+        alert('Network Error: ' + err.message);
+      }
+    }
+
+    function handleCustomPay(e) {
+      e.preventDefault();
+      const name = document.getElementById('customName').value;
+      const amount = document.getElementById('customAmount').value;
+      const currency = document.getElementById('customCurrency').value;
+      createPayment(amount, name, currency);
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/v1/payments/list/all');
+        const data = await res.json();
+        const tbody = document.getElementById('ordersTableBody');
+
+        if (!data.orders || data.orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No orders created yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.orders.map(o => `
+          <tr>
+            <td style="font-family: monospace; font-size: 12px;">${o.merchantTradeNo}</td>
+            <td>${o.goodsName}</td>
+            <td><strong>${o.orderAmount} ${o.currency}</strong></td>
+            <td><span class="badge badge-${o.status}">${o.status}</span></td>
+            <td style="font-size: 12px; color: var(--text-muted);">${new Date(o.createdAt).toLocaleTimeString()}</td>
+            <td>
+              <a href="${o.checkoutUrl}" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px;">
+                Checkout
+              </a>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadOrders();
+    setInterval(loadOrders, 5000);
+  </script>
+</body>
+</html>

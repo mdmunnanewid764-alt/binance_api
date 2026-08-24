@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merchant Portal - Login & Register | Binance Pay Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg: #0b0e11;
+      --card-bg: #181a20;
+      --border: #2b313a;
+      --primary: #f0b90b;
+      --primary-hover: #fcd535;
+      --text: #eaecef;
+      --text-muted: #848e9c;
+      --success: #0ecb81;
+      --danger: #f6465d;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 440px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .brand-icon {
+      font-size: 36px;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .brand-title span {
+      color: var(--primary);
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .tab-switch {
+      display: flex;
+      background: #23272e;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      background: #0b0e11;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: #fff;
+      padding: 12px 14px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: #0b0e11;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .alert {
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .alert-error {
+      background: rgba(246, 70, 93, 0.15);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .alert-success {
+      background: rgba(14, 203, 129, 0.15);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .footer-links {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .footer-links a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div class="brand-header">
+      <i class="fa-solid fa-coins brand-icon"></i>
+      <h1 class="brand-title">Binance <span>Pay</span> Gateway</h1>
+      <p class="brand-subtitle">Merchant Dashboard & Bot Manager</p>
+    </div>
+
+    <div class="tab-switch">
+      <button class="tab-btn active" id="loginTabBtn" onclick="switchTab('login')">Log In</button>
+      <button class="tab-btn" id="regTabBtn" onclick="switchTab('register')">Register Merchant</button>
+    </div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <!-- Login Form -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" class="form-control" placeholder="merchant@example.com" required />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn-submit" id="loginSubmitBtn">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Log In to Portal
+      </button>
+    </form>
+
+    <!-- Register Form -->
+    <form id="regForm" style="display: none;" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>Merchant / Business Name</label>
+        <input type="text" id="regName" class="form-control" placeholder="My E-Commerce / Telegram Shop" required />
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="regEmail" class="form-control" placeholder="merchant@example.com" required />
+      </div>
+      <div class="form-group">
+        <label>Password (min 6 characters)</label>
+        <input type="password" id="regPassword" class="form-control" placeholder="••••••••" minlength="6" required />
+      </div>
+      <button type="submit" class="btn-submit" id="regSubmitBtn">
+        <i class="fa-solid fa-user-plus"></i> Create Merchant Account
+      </button>
+    </form>
+
+    <div class="footer-links">
+      <a href="/docs"><i class="fa-solid fa-book"></i> Interactive API Docs</a> &nbsp;|&nbsp; 
+      <a href="/demo"><i class="fa-solid fa-store"></i> Demo Store</a>
+    </div>
+  </div>
+
+  <script>
+    // Check if already logged in
+    if (localStorage.getItem('bg_token')) {
+      window.location.href = '/dashboard';
+    }
+
+    function switchTab(tab) {
+      const loginForm = document.getElementById('loginForm');
+      const regForm = document.getElementById('regForm');
+      const loginBtn = document.getElementById('loginTabBtn');
+      const regBtn = document.getElementById('regTabBtn');
+      hideAlert();
+
+      if (tab === 'login') {
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+        loginBtn.classList.add('active');
+        regBtn.classList.remove('active');
+      } else {
+        loginForm.style.display = 'none';
+        regForm.style.display = 'block';
+        loginBtn.classList.remove('active');
+        regBtn.classList.add('active');
+      }
+    }
+
+    function showAlert(msg, isError = true) {
+      const box = document.getElementById('alertBox');
+      box.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
+      box.innerText = msg;
+      box.style.display = 'block';
+    }
+
+    function hideAlert() {
+      document.getElementById('alertBox').style.display = 'none';
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      hideAlert();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const res = await fetch('/api/v1/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          localStorage.setItem('bg_token', data.token);
+          localStorage.setItem('bg_user', JSON.stringify(data.user));
+          showAlert('Login successful! Redirecting...', false);
+          setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+        } else {
+          showAlert(data.error || 'Login failed');
+        }
+      } catch (err) {
+        showAlert('Network error: ' + err.message);
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      hideAlert();
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+
+      try {
+        const res = await fetch('/api/v1/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          localStorage.setItem('bg_token', data.token);
+          localStorage.setItem('bg_user', JSON.stringify(data.user));
+          showAlert('Registration successful! Redirecting...', false);
+          setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+        } else {
+          showAlert(data.error || 'Registration failed');
+        }
+      } catch (err) {
+        showAlert('Network error: ' + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

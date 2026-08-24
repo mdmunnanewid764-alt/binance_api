@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Binance Pay Checkout</title>
+  <!-- Google Fonts & Font Awesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-color: #0b0e11;
+      --card-bg: #181a20;
+      --card-border: #2b313a;
+      --primary: #f0b90b;
+      --primary-hover: #fcd535;
+      --text-main: #eaecef;
+      --text-muted: #848e9c;
+      --success: #0ecb81;
+      --danger: #f6465d;
+      --warning: #f0b90b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .checkout-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card-header {
+      padding: 24px 28px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .binance-logo {
+      color: var(--primary);
+      font-size: 24px;
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title span {
+      color: var(--primary);
+    }
+
+    .fee-badge {
+      background: rgba(14, 203, 129, 0.15);
+      color: var(--success);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .card-body {
+      padding: 28px;
+      text-align: center;
+    }
+
+    .amount-display {
+      margin-bottom: 24px;
+    }
+
+    .item-name {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .amount-value {
+      font-size: 36px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    .amount-currency {
+      color: var(--primary);
+      font-size: 20px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+
+    .qr-container {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      display: inline-block;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    .qr-image {
+      width: 200px;
+      height: 200px;
+      display: block;
+    }
+
+    .scan-hint {
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0b0e11;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #2b313a;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: #39414d;
+    }
+
+    .btn-simulate {
+      background: rgba(240, 185, 11, 0.1);
+      border: 1px dashed var(--primary);
+      color: var(--primary);
+      font-size: 13px;
+    }
+
+    .btn-simulate:hover {
+      background: rgba(240, 185, 11, 0.2);
+    }
+
+    .order-info-footer {
+      background: rgba(0, 0, 0, 0.2);
+      border-top: 1px solid var(--card-border);
+      padding: 16px 28px;
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .order-id {
+      font-family: monospace;
+      color: var(--text-main);
+    }
+
+    /* Live status indicator */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--warning);
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--warning);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+
+    /* Success Screen Overlay */
+    .success-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: var(--card-bg);
+      z-index: 10;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      text-align: center;
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(14, 203, 129, 0.2);
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin-bottom: 20px;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .success-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .success-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .receipt-box {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .receipt-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .receipt-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .receipt-label {
+      color: var(--text-muted);
+    }
+
+    .receipt-val {
+      font-weight: 600;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="checkout-card" id="checkoutCard">
+    <!-- Header -->
+    <div class="card-header">
+      <div class="logo-badge">
+        <i class="fa-solid fa-coins binance-logo"></i>
+        <div class="brand-title">BINANCE <span>PAY</span></div>
+      </div>
+      <div class="fee-badge">
+        <i class="fa-solid fa-bolt"></i> 0% Gas Fee
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="card-body">
+      <div class="amount-display">
+        <div class="item-name" id="goodsName">Loading order...</div>
+        <div>
+          <span class="amount-value" id="orderAmount">--.--</span>
+          <span class="amount-currency" id="orderCurrency">USDT</span>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="qr-container">
+        <img id="qrImage" class="qr-image" src="" alt="Binance Pay QR Code" />
+      </div>
+
+      <div class="scan-hint">
+        <i class="fa-solid fa-qrcode"></i> Scan with Binance App or Binance Web3
+      </div>
+
+      <!-- Actions -->
+      <div class="action-buttons">
+        <a id="deeplinkBtn" href="#" class="btn btn-primary" target="_blank">
+          <i class="fa-solid fa-mobile-screen-button"></i> Open in Binance App
+        </a>
+        <button id="copyLinkBtn" class="btn btn-secondary" onclick="copyPaymentLink()">
+          <i class="fa-regular fa-copy"></i> Copy Payment Link
+        </button>
+        <button id="mockPayBtn" class="btn btn-simulate" onclick="simulatePayment()">
+          <i class="fa-solid fa-flask"></i> [Test Mode] Simulate Paid
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="order-info-footer">
+      <div>Order: <span class="order-id" id="orderIdDisplay">...</span></div>
+      <div class="status-indicator" id="statusIndicator">
+        <div class="pulse-dot"></div>
+        <span id="statusText">Awaiting Payment</span>
+      </div>
+    </div>
+
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-icon">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <h2 class="success-title">Payment Successful!</h2>
+      <p class="success-desc">Your transaction was verified on Binance Pay.</p>
+
+      <div class="receipt-box">
+        <div class="receipt-row">
+          <span class="receipt-label">Amount:</span>
+          <span class="receipt-val" id="receiptAmount">--</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Order ID:</span>
+          <span class="receipt-val" id="receiptOrderId" style="font-family: monospace;">--</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Status:</span>
+          <span class="receipt-val" style="color: var(--success);">COMPLETED</span>
+        </div>
+        <div class="receipt-row" id="txRow" style="display: none;">
+          <span class="receipt-label">TxID:</span>
+          <span class="receipt-val" id="receiptTxId" style="font-family: monospace; font-size: 11px;">--</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="returnToMerchant()">
+        <i class="fa-solid fa-arrow-left"></i> Return to Merchant
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Extract merchantTradeNo from URL path: /checkout/:merchantTradeNo
+    const pathParts = window.location.pathname.split('/');
+    const merchantTradeNo = pathParts[pathParts.length - 1];
+
+    let currentOrder = null;
+
+    async function loadOrder() {
+      try {
+        const res = await fetch(`/api/v1/payments/${merchantTradeNo}`);
+        const data = await res.json();
+
+        if (!data.success || !data.order) {
+          document.getElementById('goodsName').innerText = 'Order Not Found';
+          return;
+        }
+
+        currentOrder = data.order;
+        renderOrder(currentOrder);
+
+        if (currentOrder.status === 'PAID') {
+          showSuccess(currentOrder);
+        } else {
+          listenForPaymentUpdates();
+        }
+      } catch (err) {
+        console.error('Failed to load order:', err);
+      }
+    }
+
+    function renderOrder(order) {
+      document.getElementById('goodsName').innerText = order.goodsName || 'Digital Purchase';
+      document.getElementById('orderAmount').innerText = order.orderAmount;
+      document.getElementById('orderCurrency').innerText = order.currency || 'USDT';
+      document.getElementById('orderIdDisplay').innerText = order.merchantTradeNo;
+
+      // QR Image
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(order.deeplink || order.checkoutUrl || window.location.href)}`;
+      document.getElementById('qrImage').src = order.qrcodeLink || qrUrl;
+
+      // Direct Deep Link Button
+      const deeplinkBtn = document.getElementById('deeplinkBtn');
+      if (order.deeplink) {
+        deeplinkBtn.href = order.deeplink;
+      } else {
+        deeplinkBtn.href = order.checkoutUrl || '#';
+      }
+
+      // Hide mock pay button if not in mock mode
+      if (!order.mock) {
+        document.getElementById('mockPayBtn').style.display = 'none';
+      }
+    }
+
+    function listenForPaymentUpdates() {
+      // Connect to Server-Sent Events (SSE)
+      const eventSource = new EventSource(`/api/v1/payments/stream/${merchantTradeNo}`);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const updatedOrder = JSON.parse(event.data);
+          if (updatedOrder.status === 'PAID') {
+            showSuccess(updatedOrder);
+            eventSource.close();
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      eventSource.onerror = () => {
+        // Fallback polling every 3 seconds if SSE disconnects
+        setTimeout(pollStatus, 3000);
+      };
+    }
+
+    async function pollStatus() {
+      try {
+        const res = await fetch(`/api/v1/payments/${merchantTradeNo}`);
+        const data = await res.json();
+        if (data.success && data.order && data.order.status === 'PAID') {
+          showSuccess(data.order);
+        } else {
+          setTimeout(pollStatus, 3000);
+        }
+      } catch (err) {
+        setTimeout(pollStatus, 4000);
+      }
+    }
+
+    function showSuccess(order) {
+      const overlay = document.getElementById('successOverlay');
+      document.getElementById('receiptAmount').innerText = `${order.orderAmount} ${order.currency}`;
+      document.getElementById('receiptOrderId').innerText = order.merchantTradeNo;
+      if (order.transactionId) {
+        document.getElementById('txRow').style.display = 'flex';
+        document.getElementById('receiptTxId').innerText = order.transactionId;
+      }
+      overlay.style.display = 'flex';
+    }
+
+    function copyPaymentLink() {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('copyLinkBtn');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Link Copied!';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      });
+    }
+
+    async function simulatePayment() {
+      const btn = document.getElementById('mockPayBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Simulating...';
+
+      try {
+        await fetch(`/api/v1/payments/mock-pay/${merchantTradeNo}`, { method: 'POST' });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function returnToMerchant() {
+      if (currentOrder && currentOrder.returnUrl) {
+        window.location.href = currentOrder.returnUrl;
+      } else {
+        window.location.href = '/demo';
+      }
+    }
+
+    // Initialize
+    loadOrder();
+  </script>
+</body>
+</html>
