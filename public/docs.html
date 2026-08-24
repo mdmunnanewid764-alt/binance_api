@@ -535,6 +535,11 @@ Body:
   </main>
 
   <script>
+    const token = localStorage.getItem('bg_token');
+    if (!token) {
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+
     async function testCreateOrder() {
       const name = document.getElementById('testGoodsName').value;
       const amount = document.getElementById('testAmount').value;

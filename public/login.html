@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Merchant Portal - Login & Register | Binance Pay Gateway</title>
+  <title>Merchant Portal - Login & Instant Sign-up | Binance Pay Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -52,7 +52,7 @@
 
     .brand-header {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
 
     .brand-icon {
@@ -74,6 +74,20 @@
       font-size: 13px;
       color: var(--text-muted);
       margin-top: 4px;
+    }
+
+    .instant-badge {
+      background: rgba(14, 203, 129, 0.15);
+      border: 1px solid var(--success);
+      color: var(--success);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
     }
 
     .tab-switch {
@@ -173,7 +187,7 @@
     .footer-links {
       text-align: center;
       margin-top: 24px;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
     }
 
@@ -189,12 +203,15 @@
     <div class="brand-header">
       <i class="fa-solid fa-coins brand-icon"></i>
       <h1 class="brand-title">Binance <span>Pay</span> Gateway</h1>
-      <p class="brand-subtitle">Merchant Dashboard & Bot Manager</p>
+      <p class="brand-subtitle">Login with Gmail/Email to access all features</p>
+      <div class="instant-badge">
+        <i class="fa-solid fa-bolt"></i> Instant Sign-up • No Admin Approval Needed
+      </div>
     </div>
 
     <div class="tab-switch">
       <button class="tab-btn active" id="loginTabBtn" onclick="switchTab('login')">Log In</button>
-      <button class="tab-btn" id="regTabBtn" onclick="switchTab('register')">Register Merchant</button>
+      <button class="tab-btn" id="regTabBtn" onclick="switchTab('register')">Sign Up (Instant)</button>
     </div>
 
     <div id="alertBox" class="alert"></div>
@@ -202,47 +219,49 @@
     <!-- Login Form -->
     <form id="loginForm" onsubmit="handleLogin(event)">
       <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="loginEmail" class="form-control" placeholder="merchant@example.com" required />
+        <label><i class="fa-regular fa-envelope"></i> Email / Gmail Address</label>
+        <input type="email" id="loginEmail" class="form-control" placeholder="your.name@gmail.com" required />
       </div>
       <div class="form-group">
-        <label>Password</label>
+        <label><i class="fa-solid fa-lock"></i> Password</label>
         <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required />
       </div>
       <button type="submit" class="btn-submit" id="loginSubmitBtn">
-        <i class="fa-solid fa-arrow-right-to-bracket"></i> Log In to Portal
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Log In & Continue
       </button>
     </form>
 
     <!-- Register Form -->
     <form id="regForm" style="display: none;" onsubmit="handleRegister(event)">
       <div class="form-group">
-        <label>Merchant / Business Name</label>
-        <input type="text" id="regName" class="form-control" placeholder="My E-Commerce / Telegram Shop" required />
+        <label><i class="fa-regular fa-user"></i> Name / Business Name</label>
+        <input type="text" id="regName" class="form-control" placeholder="John Doe / My Store" required />
       </div>
       <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="regEmail" class="form-control" placeholder="merchant@example.com" required />
+        <label><i class="fa-regular fa-envelope"></i> Email / Gmail Address</label>
+        <input type="email" id="regEmail" class="form-control" placeholder="your.name@gmail.com" required />
       </div>
       <div class="form-group">
-        <label>Password (min 6 characters)</label>
+        <label><i class="fa-solid fa-lock"></i> Create Password (min 6 characters)</label>
         <input type="password" id="regPassword" class="form-control" placeholder="••••••••" minlength="6" required />
       </div>
       <button type="submit" class="btn-submit" id="regSubmitBtn">
-        <i class="fa-solid fa-user-plus"></i> Create Merchant Account
+        <i class="fa-solid fa-bolt"></i> Create Free Account & Enter
       </button>
     </form>
 
     <div class="footer-links">
-      <a href="/docs"><i class="fa-solid fa-book"></i> Interactive API Docs</a> &nbsp;|&nbsp; 
-      <a href="/demo"><i class="fa-solid fa-store"></i> Demo Store</a>
+      <p style="margin-top: 8px;">🔐 Zero waiting time • Instant activation</p>
     </div>
   </div>
 
   <script>
-    // Check if already logged in
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectTarget = urlParams.get('redirect') || '/dashboard';
+
+    // If already logged in, redirect immediately
     if (localStorage.getItem('bg_token')) {
-      window.location.href = '/dashboard';
+      window.location.href = redirectTarget;
     }
 
     function switchTab(tab) {
@@ -293,8 +312,8 @@
         if (data.success && data.token) {
           localStorage.setItem('bg_token', data.token);
           localStorage.setItem('bg_user', JSON.stringify(data.user));
-          showAlert('Login successful! Redirecting...', false);
-          setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+          showAlert('Login successful! Entering...', false);
+          setTimeout(() => { window.location.href = redirectTarget; }, 600);
         } else {
           showAlert(data.error || 'Login failed');
         }
@@ -321,8 +340,8 @@
         if (data.success && data.token) {
           localStorage.setItem('bg_token', data.token);
           localStorage.setItem('bg_user', JSON.stringify(data.user));
-          showAlert('Registration successful! Redirecting...', false);
-          setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+          showAlert('🎉 Account activated immediately! Entering...', false);
+          setTimeout(() => { window.location.href = redirectTarget; }, 600);
         } else {
           showAlert(data.error || 'Registration failed');
         }

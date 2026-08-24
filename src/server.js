@@ -45,10 +45,6 @@ app.use('/api/v1/merchant', merchantRouter);
 app.use('/api/v1/payments', paymentRouter);
 
 // Frontend Page Routes
-app.get('/docs', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/docs.html'));
-});
-
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/login.html'));
 });
@@ -57,17 +53,21 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
-app.get('/checkout/:merchantTradeNo', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/checkout.html'));
+app.get('/docs', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/docs.html'));
 });
 
 app.get('/demo', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/demo.html'));
 });
 
-// Default root route redirects to /docs
+app.get('/checkout/:merchantTradeNo', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/checkout.html'));
+});
+
+// Default root route redirects to /login (Auth First)
 app.get('/', (req, res) => {
-  res.redirect('/docs');
+  res.redirect('/login');
 });
 
 // Function to start server
@@ -76,9 +76,9 @@ function startServer(port = config.port) {
     console.log('====================================================');
     console.log(`🚀 Binance Pay Multi-Merchant Platform is running!`);
     console.log(`🌐 Server URL:        ${config.baseUrl}`);
-    console.log(`📖 API Documentation: ${config.baseUrl}/docs`);
-    console.log(`🔐 Merchant Portal:   ${config.baseUrl}/login`);
-    console.log(`🛍️ Demo Web Store:    ${config.baseUrl}/demo`);
+    console.log(`🔐 Login Portal:      ${config.baseUrl}/login`);
+    console.log(`📊 Dashboard:         ${config.baseUrl}/dashboard`);
+    console.log(`📖 API Docs:          ${config.baseUrl}/docs`);
     console.log(`⚡ Health Endpoint:   ${config.baseUrl}/api/v1/health`);
     console.log(`🧪 Mock Mode:         ${config.mockMode ? 'ENABLED (Safe testing)' : 'LIVE'}`);
     console.log('====================================================');
@@ -90,7 +90,7 @@ function startServer(port = config.port) {
   return server;
 }
 
-// Auto-start only if executed directly (e.g. `node src/server.js`)
+// Auto-start only if executed directly
 if (process.env.NODE_ENV !== 'test' && (!process.argv[1] || process.argv[1].endsWith('server.js'))) {
   startServer();
 }

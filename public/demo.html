@@ -364,6 +364,11 @@
   </div>
 
   <script>
+    const token = localStorage.getItem('bg_token');
+    if (!token) {
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+    }
+
     async function createPayment(amount, name, currency = 'USDT') {
       try {
         const res = await fetch('/api/v1/payments/create', {

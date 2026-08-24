@@ -53,6 +53,8 @@ class Database {
       email: user.email.toLowerCase(),
       name: user.name || 'Merchant',
       passwordHash: user.passwordHash,
+      status: 'ACTIVE',
+      isApproved: true, // Instant automatic approval - No admin wait required!
       binanceConfig: user.binanceConfig || {
         apiKey: '',
         secretKey: '',
