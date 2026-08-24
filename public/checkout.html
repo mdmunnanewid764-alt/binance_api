@@ -511,18 +511,6 @@
       document.getElementById('addrErc20').innerText = erc20Addr;
 
       updateQrForNetwork(activeNetwork);
-
-      // Auto-Redirect to Binance App on Mobile
-      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const isRealBinanceOrder = order.prepayId && !order.prepayId.startsWith('prep_');
-      if (isMobile && isRealBinanceOrder && !window.hasAutoRedirected) {
-        window.hasAutoRedirected = true;
-        showToast('🚀 Opening Binance App for 1-click payment...');
-        setTimeout(() => {
-          const appDeeplink = order.deeplink || `bnc://app.binance.com/payment/secpayment?prepayId=${order.prepayId}`;
-          window.location.href = appDeeplink;
-        }, 1000);
-      }
     }
 
     function handleBinanceAppPay() {
@@ -540,7 +528,6 @@
           window.open(webUrl, '_blank');
         }
       } else {
-        // Guide user to BEP20 / TRC20 tabs smoothly
         showToast('ℹ️ Switched to BEP20 (BSC) wallet deposit');
         switchNetwork('bep20');
       }
