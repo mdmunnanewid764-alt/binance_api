@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from './authRoutes.js';
 import { db } from '../db/database.js';
+import { supabaseService } from '../db/supabase.js';
 
 export const adminRouter = express.Router();
 
@@ -37,7 +38,17 @@ adminRouter.get('/overview', (req, res) => {
  * GET /api/v1/admin/users
  * List all users with approval statuses
  */
-adminRouter.get('/users', (req, res) => {
+adminRouter.get('/users', async (req, res) => {
+  if (supabaseService.isAvailable()) {
+    try {
+      const cloudData = await supabaseService.fetchAllData();
+      if (cloudData && cloudData.users) {
+        db.data.users = { ...db.data.users, ...cloudData.users };
+        db.save();
+      }
+    } catch (e) {}
+  }
+
   const users = db.listUsers().map(u => {
     const safe = { ...u };
     delete safe.passwordHash;

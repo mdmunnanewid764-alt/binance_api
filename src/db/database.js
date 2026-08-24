@@ -29,6 +29,19 @@ class Database {
     this.hydrateFromSupabase();
   }
 
+  async init() {
+    try {
+      if (typeof supabaseService.init === 'function') {
+        await supabaseService.init();
+      }
+      await this.hydrateFromSupabase();
+      this.seedAdmin();
+      console.log(`📦 Database fully initialized with ${Object.keys(this.data.users).length} user(s) and ${Object.keys(this.data.orders).length} order(s).`);
+    } catch (err) {
+      console.warn('Database init notice:', err.message);
+    }
+  }
+
   async hydrateFromSupabase() {
     try {
       const cloudData = await supabaseService.fetchAllData();
@@ -39,6 +52,7 @@ class Database {
           this.data.telegramUsers = { ...this.data.telegramUsers, ...cloudData.telegramUsers };
         }
         this.save();
+        console.log(`☁️ Supabase Cloud hydrated: ${Object.keys(cloudData.users || {}).length} users, ${Object.keys(cloudData.orders || {}).length} orders.`);
       }
     } catch (err) {
       console.warn('Supabase cloud hydration notice:', err.message);

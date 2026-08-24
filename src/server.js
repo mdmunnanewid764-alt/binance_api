@@ -3,6 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/env.js';
+import { db } from './db/database.js';
 import { paymentRouter } from './routes/paymentRoutes.js';
 import { authRouter } from './routes/authRoutes.js';
 import { merchantRouter } from './routes/merchantRoutes.js';
@@ -73,7 +74,10 @@ app.get('/', (req, res) => {
 });
 
 // Function to start server
-function startServer(port = config.port) {
+async function startServer(port = config.port) {
+  // Ensure database is hydrated from Supabase Cloud before serving requests
+  await db.init();
+
   const server = app.listen(port, () => {
     console.log('====================================================');
     console.log(`🚀 Binance Pay Multi-Merchant Platform is running!`);

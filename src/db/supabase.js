@@ -204,8 +204,7 @@ class SupabaseService {
           INSERT INTO public.users (
             id, email, name, password_hash, role, status, is_approved, crypto_wallets, binance_config, telegram_config, gateway_api_key, gateway_api_secret, created_at, updated_at
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-          ON CONFLICT (id) DO UPDATE SET
-            email = EXCLUDED.email,
+          ON CONFLICT (email) DO UPDATE SET
             name = EXCLUDED.name,
             password_hash = EXCLUDED.password_hash,
             role = EXCLUDED.role,
@@ -214,6 +213,8 @@ class SupabaseService {
             crypto_wallets = EXCLUDED.crypto_wallets,
             binance_config = EXCLUDED.binance_config,
             telegram_config = EXCLUDED.telegram_config,
+            gateway_api_key = COALESCE(public.users.gateway_api_key, EXCLUDED.gateway_api_key),
+            gateway_api_secret = COALESCE(public.users.gateway_api_secret, EXCLUDED.gateway_api_secret),
             updated_at = EXCLUDED.updated_at
           RETURNING *;
         `;
