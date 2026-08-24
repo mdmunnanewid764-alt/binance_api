@@ -932,12 +932,17 @@
       }
 
       if (u.binanceConfig) {
-        document.getElementById('binanceApiKey').value = u.binanceConfig.apiKey || '';
-        document.getElementById('binanceSecretKey').value = u.binanceConfig.secretKey || '';
-        document.getElementById('binanceMerchantId').value = u.binanceConfig.merchantId || '';
+        const savedKey = u.binanceConfig.apiKey || localStorage.getItem('cached_binance_key') || '';
+        const savedSecret = u.binanceConfig.secretKey || localStorage.getItem('cached_binance_secret') || '';
+        const savedMerchantId = u.binanceConfig.merchantId || localStorage.getItem('cached_binance_mid') || '';
 
+        document.getElementById('binanceApiKey').value = savedKey;
+        document.getElementById('binanceSecretKey').value = savedSecret;
+        document.getElementById('binanceMerchantId').value = savedMerchantId;
+
+        const isConn = !!(u.binanceConfig.isConnected || savedKey.length > 5);
         const statusEl = document.getElementById('statBinanceStatus');
-        if (u.binanceConfig.isConnected) {
+        if (isConn) {
           statusEl.innerHTML = '<span style="color: var(--success);"><i class="fa-solid fa-circle-check"></i> Connected</span>';
         } else {
           statusEl.innerHTML = '<span style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Disconnected</span>';
@@ -1291,7 +1296,10 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast('✅ Binance credentials saved!');
+          localStorage.setItem('cached_binance_key', apiKey);
+          localStorage.setItem('cached_binance_secret', secretKey);
+          if (merchantId) localStorage.setItem('cached_binance_mid', merchantId);
+          showToast('✅ Binance credentials saved permanently!');
           loadDashboard();
         } else {
           alert('Error: ' + data.error);

@@ -67,11 +67,11 @@ merchantRouter.post('/binance', async (req, res) => {
 
     const currentConfig = req.user.binanceConfig || {};
     const newConfig = {
-      apiKey: apiKey !== undefined ? apiKey.trim() : currentConfig.apiKey,
-      secretKey: secretKey !== undefined ? secretKey.trim() : currentConfig.secretKey,
-      merchantId: merchantId !== undefined ? merchantId.trim() : currentConfig.merchantId,
-      subMerchantId: subMerchantId !== undefined ? subMerchantId.trim() : currentConfig.subMerchantId,
-      isConnected: !!(apiKey && secretKey),
+      apiKey: apiKey !== undefined ? apiKey.trim() : (currentConfig.apiKey || ''),
+      secretKey: secretKey !== undefined ? secretKey.trim() : (currentConfig.secretKey || ''),
+      merchantId: merchantId !== undefined ? merchantId.trim() : (currentConfig.merchantId || ''),
+      subMerchantId: subMerchantId !== undefined ? subMerchantId.trim() : (currentConfig.subMerchantId || ''),
+      isConnected: !!((apiKey !== undefined ? apiKey.trim() : currentConfig.apiKey) && (secretKey !== undefined ? secretKey.trim() : currentConfig.secretKey)),
     };
 
     const updatedUser = db.updateUser(req.user.id, { binanceConfig: newConfig });

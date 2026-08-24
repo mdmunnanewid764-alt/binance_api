@@ -178,15 +178,29 @@ class Database {
 
   updateUser(id, updates) {
     if (!this.data.users[id]) return null;
+    const existingUser = this.data.users[id];
+
     this.data.users[id] = {
-      ...this.data.users[id],
+      ...existingUser,
       ...updates,
+      binanceConfig: updates.binanceConfig ? {
+        ...(existingUser.binanceConfig || {}),
+        ...updates.binanceConfig,
+      } : (existingUser.binanceConfig || {}),
+      cryptoWallets: updates.cryptoWallets ? {
+        ...(existingUser.cryptoWallets || {}),
+        ...updates.cryptoWallets,
+      } : (existingUser.cryptoWallets || {}),
+      telegramConfig: updates.telegramConfig ? {
+        ...(existingUser.telegramConfig || {}),
+        ...updates.telegramConfig,
+      } : (existingUser.telegramConfig || {}),
       updatedAt: new Date().toISOString(),
     };
     this.save();
 
     if (supabaseService.isAvailable()) {
-      supabaseService.updateUser(id, updates).catch(e => console.warn('Supabase update user error:', e.message));
+      supabaseService.updateUser(id, this.data.users[id]).catch(e => console.warn('Supabase update user error:', e.message));
     }
 
     return this.data.users[id];
