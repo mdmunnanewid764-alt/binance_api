@@ -110,6 +110,7 @@ class SupabaseService {
 
         ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS paid_network TEXT;
         ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS crypto_wallets JSONB DEFAULT '{}'::jsonb;
+        ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_user_id_fkey;
 
         CREATE TABLE IF NOT EXISTS public.webhooks_log (
           id BIGSERIAL PRIMARY KEY,
@@ -358,8 +359,37 @@ class SupabaseService {
         ]);
         return this.mapOrder(res.rows[0]);
       } catch (err) {
-        console.warn('PG createOrder error:', err.message);
-        return null;
+        console.warn('PG createOrder notice:', err.message);
+        try {
+          const retryRes = await this.pgPool.query(query, [
+            order.merchantTradeNo,
+            null,
+            order.prepayId || null,
+            parseFloat(order.orderAmount),
+            order.currency || 'USDT',
+            order.goodsName,
+            order.goodsDetail || '',
+            order.status || 'INITIAL',
+            order.bizStatus || null,
+            order.paidNetwork || null,
+            JSON.stringify(order.cryptoWallets || {}),
+            order.transactionId || null,
+            order.terminalType || 'WEB',
+            order.checkoutUrl || null,
+            order.qrcodeLink || null,
+            order.deeplink || null,
+            order.universalUrl || null,
+            order.expireTime || null,
+            JSON.stringify(order.metadata || {}),
+            !!order.mock,
+            order.paidAt || null,
+            order.createdAt,
+            order.updatedAt,
+          ]);
+          return this.mapOrder(retryRes.rows[0]);
+        } catch (retryErr) {
+          return null;
+        }
       }
     }
 
