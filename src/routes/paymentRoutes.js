@@ -153,6 +153,18 @@ paymentRouter.get('/:merchantTradeNo', async (req, res) => {
     const { merchantTradeNo } = req.params;
     let order = db.getOrder(merchantTradeNo);
 
+    if (!order && supabaseService.isAvailable()) {
+      if (supabaseService.isPgDirect && supabaseService.pgPool) {
+        try {
+          const sRes = await supabaseService.pgPool.query('SELECT * FROM public.orders WHERE merchant_trade_no = $1', [merchantTradeNo]);
+          if (sRes.rows[0]) {
+            order = supabaseService.mapOrder(sRes.rows[0]);
+            db.data.orders[merchantTradeNo] = order;
+          }
+        } catch (e) {}
+      }
+    }
+
     if (!order) {
       return res.status(404).json({
         success: false,
