@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api';
+import { Bot, InlineKeyboard, InputFile } from 'grammy';
 import QRCode from 'qrcode';
 import { config } from '../config/env.js';
 import { binancePayService } from '../services/binancePay.js';
@@ -20,16 +20,16 @@ export class TelegramPaymentBot {
   start() {
     if (!config.telegramBotToken) {
       console.log('ℹ️  TELEGRAM_BOT_TOKEN not provided in .env. Telegram bot is in standby mode.');
-      console.log('   👉 To enable: Add your bot token from @BotFather to .env and restart.');
       return;
     }
 
     try {
-      this.bot = new TelegramBot(config.telegramBotToken, { polling: true });
+      this.bot = new Bot(config.telegramBotToken);
       console.log('🤖 Telegram Payment Bot initialized and polling for updates...');
 
       this.registerHandlers();
       this.registerPaymentListener();
+      this.bot.start().catch(err => console.warn('Bot polling notice:', err.message));
     } catch (err) {
       console.error('❌ Failed to start Telegram Bot:', err.message);
     }
@@ -37,14 +37,14 @@ export class TelegramPaymentBot {
 
   registerHandlers() {
     // /start command
-    this.bot.onText(/\/start/, (msg) => {
-      const chatId = msg.chat.id;
-      const firstName = msg.from.first_name || 'there';
+    this.bot.command('start', async (ctx) => {
+      const chatId = ctx.chat.id;
+      const firstName = ctx.from.first_name || 'there';
 
       db.saveTelegramUser(chatId, {
-        username: msg.from.username,
-        firstName: msg.from.first_name,
-        lastName: msg.from.last_name,
+        username: ctx.from.username,
+        firstName: ctx.from.first_name,
+        lastName: ctx.from.last_name,
       });
 
       const welcomeText = 
@@ -56,40 +56,35 @@ export class TelegramPaymentBot {
         `ℹ️ /help - Support and information\n\n` +
         `_Tap below to browse products:_`;
 
-      const keyboard = {
-        inline_keyboard: [
-          [{ text: '🛍️ Browse Products & Services', callback_data: 'cmd_products' }],
-          [{ text: '🌐 Open Web Store', url: `${config.baseUrl}/demo` }],
-        ],
-      };
+      const keyboard = new InlineKeyboard()
+        .text('🛍️ Browse Products & Services', 'cmd_products')
+        .row()
+        .url('🌐 Open Web Store', `${config.baseUrl}/demo`);
 
-      this.bot.sendMessage(chatId, welcomeText, {
+      await ctx.reply(welcomeText, {
         parse_mode: 'Markdown',
         reply_markup: keyboard,
       });
     });
 
     // /products or /buy command
-    this.bot.onText(/\/(products|buy)/, (msg) => {
-      this.sendProductsMenu(msg.chat.id);
+    this.bot.command(['products', 'buy'], async (ctx) => {
+      await this.sendProductsMenu(ctx);
     });
 
     // /status command
-    this.bot.onText(/\/status(?:\s+(\S+))?/, (msg, match) => {
-      const chatId = msg.chat.id;
-      const orderId = match[1];
+    this.bot.command('status', async (ctx) => {
+      const text = ctx.message.text.trim();
+      const parts = text.split(/\s+/);
+      const orderId = parts[1];
 
       if (!orderId) {
-        return this.bot.sendMessage(
-          chatId,
-          '⚠️ Please provide an Order ID.\nExample: `/status ORDER_123456`',
-          { parse_mode: 'Markdown' }
-        );
+        return ctx.reply('⚠️ Please provide an Order ID.\nExample: `/status ORDER_123456`', { parse_mode: 'Markdown' });
       }
 
       const order = db.getOrder(orderId);
       if (!order) {
-        return this.bot.sendMessage(chatId, `❌ Order *${orderId}* not found.`, { parse_mode: 'Markdown' });
+        return ctx.reply(`❌ Order *${orderId}* not found.`, { parse_mode: 'Markdown' });
       }
 
       const statusEmoji = order.status === 'PAID' ? '✅' : order.status === 'PENDING' ? '⏳' : '⚠️';
@@ -102,39 +97,34 @@ export class TelegramPaymentBot {
         (order.transactionId ? `• *TxID:* \`${order.transactionId}\`\n` : '') +
         (order.paidAt ? `• *Paid At:* ${new Date(order.paidAt).toLocaleString()}\n` : '');
 
-      const buttons = [];
+      const keyboard = new InlineKeyboard();
       if (order.status !== 'PAID') {
-        buttons.push([{ text: '💳 Pay Now', url: order.checkoutUrl || `${config.baseUrl}/checkout/${order.merchantTradeNo}` }]);
+        keyboard.url('💳 Pay Now', order.checkoutUrl || `${config.baseUrl}/checkout/${order.merchantTradeNo}`);
       }
 
-      this.bot.sendMessage(chatId, responseText, {
+      await ctx.reply(responseText, {
         parse_mode: 'Markdown',
-        reply_markup: buttons.length ? { inline_keyboard: buttons } : undefined,
+        reply_markup: keyboard,
       });
     });
 
     // /help command
-    this.bot.onText(/\/help/, (msg) => {
-      const helpText =
-        `💡 *Binance Pay Bot Help*\n\n` +
-        `1. Choose an item from /products.\n` +
-        `2. Receive a secure Binance Pay checkout link and QR code.\n` +
-        `3. Scan the QR code with your Binance mobile app or tap "Pay with Binance".\n` +
-        `4. Payment is verified instantly with *zero gas fees*!\n\n` +
-        `If you have questions, please reach out to admin.`;
-
-      this.bot.sendMessage(msg.chat.id, helpText, { parse_mode: 'Markdown' });
+    this.bot.command('help', async (ctx) => {
+      await ctx.reply(
+        `💡 *Binance Pay Bot Help*\n\n1. Choose an item from /products.\n2. Receive a secure Binance Pay checkout link and QR code.\n3. Scan the QR code with your Binance mobile app or tap "Pay with Binance".\n4. Payment is verified instantly with *zero gas fees*!`,
+        { parse_mode: 'Markdown' }
+      );
     });
 
-    // Callback queries (Button clicks)
-    this.bot.on('callback_query', async (query) => {
-      const chatId = query.message.chat.id;
-      const data = query.data;
+    // Callback queries
+    this.bot.on('callback_query:data', async (ctx) => {
+      const chatId = ctx.chat.id;
+      const data = ctx.callbackQuery.data;
 
       try {
         if (data === 'cmd_products') {
-          await this.bot.answerCallbackQuery(query.id);
-          return this.sendProductsMenu(chatId);
+          await ctx.answerCallbackQuery();
+          return this.sendProductsMenu(ctx);
         }
 
         if (data.startsWith('buy_')) {
@@ -142,12 +132,11 @@ export class TelegramPaymentBot {
           const product = this.products.find(p => p.id === prodId);
 
           if (!product) {
-            return this.bot.answerCallbackQuery(query.id, { text: 'Product not found', show_alert: true });
+            return ctx.answerCallbackQuery({ text: 'Product not found', show_alert: true });
           }
 
-          await this.bot.answerCallbackQuery(query.id, { text: `Creating Binance Pay invoice for ${product.name}...` });
+          await ctx.answerCallbackQuery({ text: `Creating Binance Pay invoice for ${product.name}...` });
 
-          // Create payment order
           const merchantTradeNo = `TG_${Date.now()}_${uuidv4().slice(0, 6).toUpperCase()}`;
           const orderParams = {
             merchantTradeNo,
@@ -159,8 +148,8 @@ export class TelegramPaymentBot {
             terminalType: 'APP',
             metadata: {
               telegramChatId: chatId,
-              telegramUserId: query.from.id,
-              telegramUsername: query.from.username,
+              telegramUserId: ctx.from.id,
+              telegramUsername: ctx.from.username,
               productId: product.id,
             },
           };
@@ -168,12 +157,11 @@ export class TelegramPaymentBot {
           const binanceRes = await binancePayService.createOrder(orderParams);
 
           if (binanceRes.status !== 'SUCCESS') {
-            return this.bot.sendMessage(chatId, '❌ Failed to generate Binance Pay invoice. Please try again.');
+            return ctx.reply('❌ Failed to generate Binance Pay invoice. Please try again.');
           }
 
           const paymentData = binanceRes.data;
 
-          // Save order to DB
           const savedOrder = db.createOrder({
             merchantTradeNo,
             prepayId: paymentData.prepayId,
@@ -190,7 +178,6 @@ export class TelegramPaymentBot {
             mock: !!binanceRes.mock,
           });
 
-          // Generate QR Code image buffer for Binance Pay URL / Checkout
           const targetPayUrl = paymentData.deeplink || savedOrder.checkoutUrl;
           const qrBuffer = await QRCode.toBuffer(targetPayUrl, {
             errorCorrectionLevel: 'H',
@@ -204,30 +191,18 @@ export class TelegramPaymentBot {
             `📦 *Item:* ${product.name}\n` +
             `💰 *Amount:* *${product.amount} ${product.currency}*\n` +
             `🆔 *Order ID:* \`${merchantTradeNo}\`\n\n` +
-            `📱 *How to pay:*\n` +
-            `• Scan the QR code above with your *Binance App*, or\n` +
-            `• Tap the *Pay in Binance App* button below!\n\n` +
-            `⏱️ Payment is confirmed automatically within seconds.`;
+            `📱 *Scan QR with Binance App* or tap button below!`;
 
-          const keyboard = {
-            inline_keyboard: [
-              [
-                { text: '🟡 Pay with Binance App', url: paymentData.deeplink || savedOrder.checkoutUrl },
-              ],
-              [
-                { text: '🌐 Web Checkout Page', url: `${config.baseUrl}/checkout/${merchantTradeNo}` },
-              ],
-            ],
-          };
+          const keyboard = new InlineKeyboard()
+            .url('🟡 Pay with Binance App', paymentData.deeplink || savedOrder.checkoutUrl)
+            .row()
+            .url('🌐 Web Checkout Page', `${config.baseUrl}/checkout/${merchantTradeNo}`);
 
-          // If in mock mode, add a one-tap mock pay button for effortless testing
           if (savedOrder.mock) {
-            keyboard.inline_keyboard.push([
-              { text: '🧪 Test Payment (Simulate Success)', callback_data: `mockpay_${merchantTradeNo}` }
-            ]);
+            keyboard.row().text('🧪 Test Payment (Simulate Success)', `mockpay_${merchantTradeNo}`);
           }
 
-          await this.bot.sendPhoto(chatId, qrBuffer, {
+          await ctx.replyWithPhoto(new InputFile(qrBuffer, 'invoice.png'), {
             caption,
             parse_mode: 'Markdown',
             reply_markup: keyboard,
@@ -239,10 +214,10 @@ export class TelegramPaymentBot {
           const order = db.getOrder(merchantTradeNo);
 
           if (!order) {
-            return this.bot.answerCallbackQuery(query.id, { text: 'Order not found', show_alert: true });
+            return ctx.answerCallbackQuery({ text: 'Order not found', show_alert: true });
           }
 
-          await this.bot.answerCallbackQuery(query.id, { text: 'Simulating successful payment...' });
+          await ctx.answerCallbackQuery({ text: 'Simulating successful payment...' });
 
           const updatedOrder = db.updateOrder(merchantTradeNo, {
             status: 'PAID',
@@ -256,29 +231,26 @@ export class TelegramPaymentBot {
         }
       } catch (error) {
         console.error('Telegram callback query error:', error);
-        this.bot.sendMessage(chatId, `⚠️ Error processing request: ${error.message}`);
+        ctx.reply(`⚠️ Error processing request: ${error.message}`);
       }
     });
   }
 
-  sendProductsMenu(chatId) {
+  async sendProductsMenu(ctx) {
     let message = `🛒 *Binance Pay Store Menu*\n\nSelect an item to generate an instant crypto invoice:\n`;
+    const keyboard = new InlineKeyboard();
 
-    const inline_keyboard = this.products.map(p => ([
-      {
-        text: `${p.name} - ${p.amount} ${p.currency}`,
-        callback_data: `buy_${p.id}`,
-      }
-    ]));
+    this.products.forEach(p => {
+      keyboard.text(`${p.name} - ${p.amount} ${p.currency}`, `buy_${p.id}`).row();
+    });
 
-    this.bot.sendMessage(chatId, message, {
+    await ctx.reply(message, {
       parse_mode: 'Markdown',
-      reply_markup: { inline_keyboard },
+      reply_markup: keyboard,
     });
   }
 
   registerPaymentListener() {
-    // Listen for real-time payment updates from webhooks
     paymentEvents.on('payment:updated', async (order) => {
       if (order.status === 'PAID' && order.metadata?.telegramChatId && this.bot) {
         const chatId = order.metadata.telegramChatId;
@@ -290,10 +262,10 @@ export class TelegramPaymentBot {
           `• *Amount Paid:* ${order.orderAmount} ${order.currency}\n` +
           (order.transactionId ? `• *Binance TxID:* \`${order.transactionId}\`\n` : '') +
           `• *Status:* ✅ PAID / COMPLETED\n\n` +
-          `🚀 Thank you for your purchase! Your service/access is now active.`;
+          `🚀 Thank you for your purchase!`;
 
         try {
-          await this.bot.sendMessage(chatId, paidText, { parse_mode: 'Markdown' });
+          await this.bot.api.sendMessage(chatId, paidText, { parse_mode: 'Markdown' });
         } catch (err) {
           console.error(`Failed to send payment notification to Telegram chat ${chatId}:`, err.message);
         }

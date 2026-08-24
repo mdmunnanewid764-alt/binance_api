@@ -29,8 +29,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "grammy": "^1.45.1",
     "jsonwebtoken": "^9.0.3",
-    "node-telegram-bot-api": "^0.66.0",
     "pg": "^8.23.0",
     "qrcode": "^1.5.4",
     "uuid": "^11.0.5"
