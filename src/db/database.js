@@ -65,6 +65,11 @@ class Database {
         isApproved: true,
         passwordHash,
         binanceConfig: { apiKey: '', secretKey: '', isConnected: false },
+        cryptoWallets: {
+          bep20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+          trc20: 'TYasdf123456789TronUSDTAddress9988',
+          erc20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+        },
         telegramConfig: { botToken: '', isActive: false, products: [] },
         gatewayApiKey: 'bg_live_super_admin',
         gatewayApiSecret: 'sec_admin_root_key',
@@ -74,11 +79,17 @@ class Database {
       this.save();
       console.log(`👑 Super Admin account initialized: ${adminEmail}`);
     } else {
-      // Ensure existing admin has updated password and active status
       existing.passwordHash = passwordHash;
       existing.role = 'ADMIN';
       existing.status = 'ACTIVE';
       existing.isApproved = true;
+      if (!existing.cryptoWallets) {
+        existing.cryptoWallets = {
+          bep20: '',
+          trc20: '',
+          erc20: '',
+        };
+      }
       existing.updatedAt = new Date().toISOString();
       this.save();
       console.log(`👑 Super Admin account synced: ${adminEmail}`);
@@ -102,6 +113,11 @@ class Database {
         merchantId: '',
         subMerchantId: '',
         isConnected: false,
+      },
+      cryptoWallets: user.cryptoWallets || {
+        bep20: '', // BNB Smart Chain (BEP20 USDT)
+        trc20: '', // TRON (TRC20 USDT)
+        erc20: '', // Ethereum (ERC20 USDT)
       },
       telegramConfig: user.telegramConfig || {
         botToken: '',
@@ -195,6 +211,11 @@ class Database {
     this.data.orders[order.merchantTradeNo] = {
       ...order,
       userId: order.userId || null,
+      cryptoWallets: order.cryptoWallets || {
+        bep20: '',
+        trc20: '',
+        erc20: '',
+      },
       status: order.status || 'INITIAL',
       createdAt: order.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),

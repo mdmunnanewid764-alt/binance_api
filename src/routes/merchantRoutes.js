@@ -91,6 +91,37 @@ merchantRouter.post('/binance', async (req, res) => {
 });
 
 /**
+ * POST /api/v1/merchant/crypto-wallets
+ * Save or update BEP20, TRC20, and ERC20 deposit addresses
+ */
+merchantRouter.post('/crypto-wallets', async (req, res) => {
+  try {
+    const { bep20, trc20, erc20 } = req.body;
+    const currentWallets = req.user.cryptoWallets || {};
+
+    const newWallets = {
+      bep20: bep20 !== undefined ? bep20.trim() : (currentWallets.bep20 || ''),
+      trc20: trc20 !== undefined ? trc20.trim() : (currentWallets.trc20 || ''),
+      erc20: erc20 !== undefined ? erc20.trim() : (currentWallets.erc20 || ''),
+    };
+
+    const updatedUser = db.updateUser(req.user.id, { cryptoWallets: newWallets });
+    const safeUser = { ...updatedUser };
+    delete safeUser.passwordHash;
+
+    return res.json({
+      success: true,
+      message: 'Crypto deposit addresses (BEP20, TRC20, ERC20) updated successfully',
+      cryptoWallets: newWallets,
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error('Error updating crypto wallets:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Server error' });
+  }
+});
+
+/**
  * POST /api/v1/merchant/test-binance
  * Verify connected Binance API credentials
  */

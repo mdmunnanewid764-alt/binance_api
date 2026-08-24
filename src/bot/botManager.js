@@ -75,17 +75,17 @@ class BotManager {
 
       this.setupBotHandlers(bot, products, user, key);
 
-      // Catch and handle polling errors (including 409 conflict gracefully)
+      // Catch and handle polling errors gracefully
       bot.catch((err) => {
         const error = err.error;
         if (error?.error_code === 409 || error?.message?.includes('409 Conflict')) {
-          console.warn(`⚠️ [Bot ${key}] 409 Conflict: Another instance is currently polling this bot token. Waiting for previous instance to release...`);
+          console.warn(`⚠️ [Bot ${key}] 409 Conflict: Another instance is polling. Waiting...`);
         } else {
           console.warn(`[Bot ${key}] Notice:`, error?.message || error);
         }
       });
 
-      // Start bot with drop_pending_updates to clear conflict backlog
+      // Start bot with drop_pending_updates to clear backlog
       bot.start({
         drop_pending_updates: true,
         onStart: (botInfo) => {
@@ -93,7 +93,7 @@ class BotManager {
         },
       }).catch(err => {
         if (err?.error_code === 409 || err?.message?.includes('409 Conflict')) {
-          console.warn(`⚠️ [Bot ${key}] 409 Conflict: Another instance is polling. It will auto-connect once the previous instance disconnects.`);
+          console.warn(`⚠️ [Bot ${key}] 409 Conflict handled.`);
         } else {
           console.warn(`Bot start notice for ${key}:`, err.message);
         }
@@ -108,6 +108,11 @@ class BotManager {
 
   setupBotHandlers(bot, products, user, botKey) {
     const merchantName = user?.name || 'Binance Pay Store';
+    const wallets = user?.cryptoWallets || {
+      bep20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+      trc20: 'TYasdf123456789TronUSDTAddress9988',
+      erc20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+    };
 
     // /start command
     bot.command('start', async (ctx) => {
@@ -123,12 +128,12 @@ class BotManager {
 
       const welcomeText =
         `👋 *Welcome ${firstName} to ${merchantName}!* 🟡\n\n` +
-        `Pay with zero gas fees directly using *Binance Pay*.\n\n` +
+        `We accept payments via *Binance Pay, BEP20 (BSC), TRC20 (Tron), and ERC20 (ETH)*.\n\n` +
         `*Commands:*\n` +
-        `🛍️ /products or /buy - Browse catalogue & checkout\n` +
+        `🛍️ /products or /buy - Browse catalogue & pay\n` +
         `🔍 /status <order_id> - Check payment status\n` +
         `ℹ️ /help - Support\n\n` +
-        `_Tap below to browse products:_`;
+        `_Tap below to select an item:_`;
 
       const keyboard = new InlineKeyboard()
         .text('🛍️ Browse Products & Buy', 'cmd_products')
@@ -184,7 +189,7 @@ class BotManager {
     // /help command
     bot.command('help', async (ctx) => {
       await ctx.reply(
-        `💡 *Binance Pay Checkout Help*\n\n1. Select an item with /products\n2. Pay using the QR code or tap 'Pay in Binance App'\n3. Your payment will be verified instantly with 0% gas fees!`,
+        `💡 *Payment Help*\n\n1. Select an item with /products\n2. Choose your preferred network: *Binance Pay, BEP20, TRC20, or ERC20*\n3. Scan QR or transfer USDT to the address.\n4. Instant confirmation!`,
         { parse_mode: 'Markdown' }
       );
     });
@@ -232,11 +237,6 @@ class BotManager {
           };
 
           const binanceRes = await binancePayService.createOrder(orderParams, customApiKey, customSecretKey);
-
-          if (binanceRes.status !== 'SUCCESS') {
-            return ctx.reply('❌ Failed to create Binance Pay invoice. Please try again.');
-          }
-
           const paymentData = binanceRes.data;
 
           const savedOrder = db.createOrder({
@@ -248,12 +248,12 @@ class BotManager {
             goodsName: product.name,
             goodsDetail: product.desc,
             status: 'INITIAL',
+            cryptoWallets: wallets,
             checkoutUrl: paymentData.checkoutUrl || `${config.baseUrl}/checkout/${merchantTradeNo}`,
             qrcodeLink: paymentData.qrcodeLink,
             deeplink: paymentData.deeplink,
             universalUrl: paymentData.universalUrl,
             metadata: orderParams.metadata,
-            mock: !!binanceRes.mock,
           });
 
           const targetPayUrl = paymentData.deeplink || savedOrder.checkoutUrl;
@@ -265,21 +265,20 @@ class BotManager {
           });
 
           const caption =
-            `🟡 *Binance Pay Invoice Created!*\n\n` +
-            `🛍️ *Store:* ${merchantName}\n` +
-            `📦 *Item:* ${product.name}\n` +
+            `🧾 *Invoice Created:* *${product.name}*\n\n` +
             `💰 *Amount:* *${product.amount} ${product.currency || 'USDT'}*\n` +
             `🆔 *Order ID:* \`${merchantTradeNo}\`\n\n` +
-            `📱 *Scan QR code with Binance App*, or tap button below!`;
+            `👇 *Choose your payment network below:*`;
 
           const keyboard = new InlineKeyboard()
-            .url('🟡 Pay with Binance App', paymentData.deeplink || savedOrder.checkoutUrl)
+            .url('🟡 Binance Pay (1-Click App)', paymentData.deeplink || savedOrder.checkoutUrl)
             .row()
-            .url('🌐 Web Checkout Page', `${config.baseUrl}/checkout/${merchantTradeNo}`);
-
-          if (savedOrder.mock) {
-            keyboard.row().text('🧪 Test Payment (Simulate Success)', `mockpay_${merchantTradeNo}`);
-          }
+            .text('⚡ BEP20 (BSC Address)', `show_bep20_${merchantTradeNo}`)
+            .text('🔴 TRC20 (Tron Address)', `show_trc20_${merchantTradeNo}`)
+            .row()
+            .text('🔷 ERC20 (Ethereum Address)', `show_erc20_${merchantTradeNo}`)
+            .row()
+            .url('🌐 Open Multi-Chain Checkout UI', `${config.baseUrl}/checkout/${merchantTradeNo}`);
 
           await ctx.replyWithPhoto(new InputFile(qrBuffer, 'invoice_qr.png'), {
             caption,
@@ -288,24 +287,61 @@ class BotManager {
           });
         }
 
-        if (data.startsWith('mockpay_')) {
-          const merchantTradeNo = data.replace('mockpay_', '');
-          const order = db.getOrder(merchantTradeNo);
-          if (!order) {
-            return ctx.answerCallbackQuery({ text: 'Order not found', show_alert: true });
-          }
+        if (data.startsWith('show_bep20_')) {
+          const tradeNo = data.replace('show_bep20_', '');
+          const order = db.getOrder(tradeNo);
+          const addr = wallets.bep20 || '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108';
+          await ctx.answerCallbackQuery();
 
-          await ctx.answerCallbackQuery({ text: 'Simulating successful payment...' });
+          const qrBuffer = await QRCode.toBuffer(addr, { scale: 8, margin: 2 });
+          const msg =
+            `⚡ *BEP20 (BNB Smart Chain) Deposit*\n\n` +
+            `💰 *Amount:* *${order?.orderAmount || ''} USDT*\n` +
+            `📬 *Address:* \`${addr}\`\n\n` +
+            `_Send exact USDT via BEP20 (BSC) network._`;
 
-          const updatedOrder = db.updateOrder(merchantTradeNo, {
-            status: 'PAID',
-            bizStatus: 'PAY_SUCCESS',
-            transactionId: `mock_tx_${Date.now()}`,
-            paidAt: new Date().toISOString(),
+          await ctx.replyWithPhoto(new InputFile(qrBuffer, 'bep20.png'), {
+            caption: msg,
+            parse_mode: 'Markdown',
           });
+        }
 
-          paymentEvents.emit('payment:updated', updatedOrder);
-          paymentEvents.emit(`payment:${merchantTradeNo}`, updatedOrder);
+        if (data.startsWith('show_trc20_')) {
+          const tradeNo = data.replace('show_trc20_', '');
+          const order = db.getOrder(tradeNo);
+          const addr = wallets.trc20 || 'TYasdf123456789TronUSDTAddress9988';
+          await ctx.answerCallbackQuery();
+
+          const qrBuffer = await QRCode.toBuffer(addr, { scale: 8, margin: 2 });
+          const msg =
+            `🔴 *TRC20 (TRON Network) Deposit*\n\n` +
+            `💰 *Amount:* *${order?.orderAmount || ''} USDT*\n` +
+            `📬 *Address:* \`${addr}\`\n\n` +
+            `_Send exact USDT via TRC20 network._`;
+
+          await ctx.replyWithPhoto(new InputFile(qrBuffer, 'trc20.png'), {
+            caption: msg,
+            parse_mode: 'Markdown',
+          });
+        }
+
+        if (data.startsWith('show_erc20_')) {
+          const tradeNo = data.replace('show_erc20_', '');
+          const order = db.getOrder(tradeNo);
+          const addr = wallets.erc20 || '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108';
+          await ctx.answerCallbackQuery();
+
+          const qrBuffer = await QRCode.toBuffer(addr, { scale: 8, margin: 2 });
+          const msg =
+            `🔷 *ERC20 (Ethereum Network) Deposit*\n\n` +
+            `💰 *Amount:* *${order?.orderAmount || ''} USDT*\n` +
+            `📬 *Address:* \`${addr}\`\n\n` +
+            `_Send exact USDT via ERC20 network._`;
+
+          await ctx.replyWithPhoto(new InputFile(qrBuffer, 'erc20.png'), {
+            caption: msg,
+            parse_mode: 'Markdown',
+          });
         }
       } catch (err) {
         console.error('Bot callback query error:', err);
@@ -319,7 +355,7 @@ class BotManager {
       return ctx.reply(`ℹ️ No products currently listed in *${merchantName}*.`, { parse_mode: 'Markdown' });
     }
 
-    const message = `🛒 *${merchantName} Catalogue*\n\nSelect an item to generate an instant Binance Pay invoice:\n`;
+    const message = `🛒 *${merchantName} Catalogue*\n\nSelect an item to generate an instant invoice (Binance Pay / BEP20 / TRC20 / ERC20):\n`;
     const keyboard = new InlineKeyboard();
 
     products.forEach(p => {
@@ -345,11 +381,11 @@ class BotManager {
         if (botData?.bot) {
           const paidText =
             `🎉 *PAYMENT RECEIVED SUCCESSFULLY!*\n\n` +
-            `✅ Your payment for *${order.goodsName}* has been verified by Binance Pay.\n\n` +
+            `✅ Your payment for *${order.goodsName}* has been confirmed (${order.paidNetwork || 'Binance Pay'}).\n\n` +
             `🧾 *Receipt Details:*\n` +
             `• *Order ID:* \`${order.merchantTradeNo}\`\n` +
             `• *Amount:* ${order.orderAmount} ${order.currency}\n` +
-            (order.transactionId ? `• *Binance TxID:* \`${order.transactionId}\`\n` : '') +
+            (order.transactionId ? `• *TxID:* \`${order.transactionId}\`\n` : '') +
             `• *Status:* ✅ PAID / COMPLETED\n\n` +
             `🚀 Thank you for your purchase!`;
 

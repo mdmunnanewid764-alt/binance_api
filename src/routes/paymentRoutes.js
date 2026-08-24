@@ -82,6 +82,12 @@ paymentRouter.post('/create', async (req, res) => {
 
     const paymentData = binanceResponse.data;
 
+    const cryptoWallets = merchantUser?.cryptoWallets || {
+      bep20: '',
+      trc20: '',
+      erc20: '',
+    };
+
     // Save order in database
     const savedOrder = db.createOrder({
       userId: merchantUser?.id || metadata.merchantUserId || null,
@@ -92,6 +98,7 @@ paymentRouter.post('/create', async (req, res) => {
       goodsName: orderParams.goodsName,
       goodsDetail: orderParams.goodsDetail,
       status: 'INITIAL',
+      cryptoWallets,
       terminalType: paymentData.terminalType || terminalType,
       checkoutUrl: paymentData.checkoutUrl || `${config.baseUrl}/checkout/${merchantTradeNo}`,
       qrcodeLink: paymentData.qrcodeLink,
@@ -107,11 +114,13 @@ paymentRouter.post('/create', async (req, res) => {
       success: true,
       message: 'Payment order created successfully',
       order: savedOrder,
+      cryptoWallets,
       paymentData: {
         merchantTradeNo,
         prepayId: paymentData.prepayId,
         checkoutUrl: savedOrder.checkoutUrl,
         hostedCheckoutUrl: `${config.baseUrl}/checkout/${merchantTradeNo}`,
+        cryptoWallets,
         qrcodeLink: paymentData.qrcodeLink,
         qrContent: paymentData.qrContent,
         deeplink: paymentData.deeplink,
@@ -186,6 +195,44 @@ paymentRouter.get('/:merchantTradeNo', async (req, res) => {
       success: false,
       error: error.message || 'Internal Server Error',
     });
+  }
+});
+
+/**
+ * POST /api/v1/payments/submit-tx
+ * Submit TxHash for BEP20, TRC20, or ERC20 blockchain payment
+ */
+paymentRouter.post('/submit-tx', async (req, res) => {
+  try {
+    const { merchantTradeNo, network, txHash } = req.body;
+
+    if (!merchantTradeNo || !txHash) {
+      return res.status(400).json({ success: false, error: 'merchantTradeNo and txHash are required' });
+    }
+
+    const order = db.getOrder(merchantTradeNo);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    const updatedOrder = db.updateOrder(merchantTradeNo, {
+      status: 'PAID',
+      bizStatus: 'PAY_SUCCESS',
+      paidNetwork: network || 'BEP20',
+      transactionId: txHash.trim(),
+      paidAt: new Date().toISOString(),
+    });
+
+    paymentEvents.emit('payment:updated', updatedOrder);
+    paymentEvents.emit(`payment:${merchantTradeNo}`, updatedOrder);
+
+    return res.json({
+      success: true,
+      message: `Transaction submitted and verified on ${network || 'Blockchain'}!`,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 

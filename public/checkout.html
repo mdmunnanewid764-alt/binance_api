@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Binance Pay Checkout</title>
+  <title>Crypto Checkout | Binance Pay & Multi-Chain</title>
   <!-- Google Fonts & Font Awesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Client-side QRCode generator library -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
   <style>
     :root {
@@ -22,13 +24,16 @@
       --success: #0ecb81;
       --danger: #f6465d;
       --warning: #f0b90b;
+      --bep20-color: #f0b90b;
+      --trc20-color: #f6465d;
+      --erc20-color: #61affe;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
     body {
@@ -45,69 +50,41 @@
     .checkout-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 20px;
+      border-radius: 24px;
       width: 100%;
-      max-width: 460px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      max-width: 480px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
       overflow: hidden;
       position: relative;
     }
 
     .card-header {
-      padding: 24px 28px 16px;
+      padding: 22px 28px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--card-border);
     }
 
-    .logo-badge {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .binance-logo {
-      color: var(--primary);
-      font-size: 24px;
-    }
-
     .brand-title {
       font-weight: 800;
       font-size: 18px;
-      letter-spacing: -0.5px;
     }
 
     .brand-title span {
       color: var(--primary);
     }
 
-    .fee-badge {
-      background: rgba(14, 203, 129, 0.15);
-      color: var(--success);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .card-body {
-      padding: 28px;
+    .order-amount-box {
       text-align: center;
-    }
-
-    .amount-display {
-      margin-bottom: 24px;
+      padding: 20px 24px 10px;
     }
 
     .item-name {
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .amount-value {
@@ -123,43 +100,95 @@
       margin-left: 4px;
     }
 
-    .qr-container {
-      background: #ffffff;
-      padding: 16px;
-      border-radius: 16px;
-      display: inline-block;
-      margin: 0 auto 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      position: relative;
+    /* Network Switcher Tabs */
+    .network-tabs {
+      display: flex;
+      background: #23272e;
+      border-radius: 12px;
+      padding: 4px;
+      margin: 16px 24px 20px;
+      gap: 4px;
     }
 
-    .qr-image {
-      width: 200px;
-      height: 200px;
+    .network-tab-btn {
+      flex: 1;
+      padding: 8px 4px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .network-tab-btn.active {
+      background: var(--card-bg);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .network-tab-btn.active.bpay { color: var(--primary); border-bottom: 2px solid var(--primary); }
+    .network-tab-btn.active.bep20 { color: var(--bep20-color); border-bottom: 2px solid var(--bep20-color); }
+    .network-tab-btn.active.trc20 { color: var(--trc20-color); border-bottom: 2px solid var(--trc20-color); }
+    .network-tab-btn.active.erc20 { color: var(--erc20-color); border-bottom: 2px solid var(--erc20-color); }
+
+    .tab-content-area {
+      padding: 0 24px 24px;
+      text-align: center;
+    }
+
+    .qr-container {
+      background: #ffffff;
+      padding: 14px;
+      border-radius: 16px;
+      display: inline-block;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    canvas.qr-canvas, img.qr-image {
+      width: 190px !important;
+      height: 190px !important;
       display: block;
     }
 
-    .scan-hint {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+    .address-display-box {
+      background: #0b0e11;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: left;
     }
 
-    .action-buttons {
+    .address-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .address-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: #fff;
+      display: block;
+      margin-bottom: 8px;
     }
 
     .btn {
       width: 100%;
-      padding: 14px 20px;
+      padding: 12px 18px;
       border-radius: 12px;
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       border: none;
@@ -167,378 +196,314 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: #0b0e11;
+    .btn-primary { background: var(--primary); color: #0b0e11; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary { background: #2b313a; color: #fff; }
+    .btn-secondary:hover { background: #39414d; }
+
+    .tx-submit-card {
+      background: #23272e;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 14px;
+      text-align: left;
     }
 
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: #2b313a;
-      color: var(--text-main);
-    }
-
-    .btn-secondary:hover {
-      background: #39414d;
-    }
-
-    .btn-simulate {
-      background: rgba(240, 185, 11, 0.1);
-      border: 1px dashed var(--primary);
-      color: var(--primary);
-      font-size: 13px;
-    }
-
-    .btn-simulate:hover {
-      background: rgba(240, 185, 11, 0.2);
-    }
-
-    .order-info-footer {
-      background: rgba(0, 0, 0, 0.2);
-      border-top: 1px solid var(--card-border);
-      padding: 16px 28px;
+    .tx-submit-card label {
       font-size: 12px;
       color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
     }
 
-    .order-id {
-      font-family: monospace;
-      color: var(--text-main);
-    }
-
-    /* Live status indicator */
-    .status-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    .tx-submit-card input {
+      width: 100%;
+      background: #0b0e11;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      padding: 10px;
       font-size: 12px;
-      color: var(--warning);
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 8px;
     }
 
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--warning);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); opacity: 0.7; }
-      50% { transform: scale(1.3); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.7; }
-    }
-
-    /* Success Screen Overlay */
+    /* Paid / Success State */
     .success-overlay {
       display: none;
-      position: absolute;
-      inset: 0;
-      background: var(--card-bg);
-      z-index: 10;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
+      padding: 40px 24px;
       text-align: center;
     }
 
-    .success-icon {
+    .success-icon-wrap {
       width: 80px;
       height: 80px;
+      background: rgba(14, 203, 129, 0.15);
+      border: 2px solid var(--success);
       border-radius: 50%;
-      background: rgba(14, 203, 129, 0.2);
-      color: var(--success);
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 40px;
+      color: var(--success);
+      font-size: 36px;
       margin-bottom: 20px;
-      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes popIn {
-      0% { transform: scale(0.5); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    .success-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-
-    .success-desc {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
-    .receipt-box {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      width: 100%;
-      padding: 16px;
-      margin-bottom: 24px;
-      text-align: left;
-      font-size: 13px;
-    }
-
-    .receipt-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .receipt-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .receipt-label {
-      color: var(--text-muted);
-    }
-
-    .receipt-val {
-      font-weight: 600;
-      color: #fff;
     }
   </style>
 </head>
 <body>
 
-  <div class="checkout-card" id="checkoutCard">
-    <!-- Header -->
+  <div class="checkout-card" id="mainCheckoutCard">
     <div class="card-header">
-      <div class="logo-badge">
-        <i class="fa-solid fa-coins binance-logo"></i>
-        <div class="brand-title">BINANCE <span>PAY</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-coins" style="color: var(--primary); font-size: 22px;"></i>
+        <div class="brand-title">Binance <span>Pay</span> & Multi-Chain</div>
       </div>
-      <div class="fee-badge">
-        <i class="fa-solid fa-bolt"></i> 0% Gas Fee
+      <div id="liveBadge" style="font-size: 11px; color: var(--success); font-weight: 700;">
+        <i class="fa-solid fa-circle fa-fade"></i> Live Active
       </div>
     </div>
 
-    <!-- Body -->
-    <div class="card-body">
-      <div class="amount-display">
-        <div class="item-name" id="goodsName">Loading order...</div>
+    <!-- Active State -->
+    <div id="activeState">
+      <div class="order-amount-box">
+        <div class="item-name" id="goodsName">Loading order details...</div>
         <div>
           <span class="amount-value" id="orderAmount">--.--</span>
-          <span class="amount-currency" id="orderCurrency">USDT</span>
+          <span class="amount-currency" id="currency">USDT</span>
         </div>
       </div>
 
-      <!-- QR Code -->
-      <div class="qr-container">
-        <img id="qrImage" class="qr-image" src="" alt="Binance Pay QR Code" />
-      </div>
-
-      <div class="scan-hint">
-        <i class="fa-solid fa-qrcode"></i> Scan with Binance App or Binance Web3
-      </div>
-
-      <!-- Actions -->
-      <div class="action-buttons">
-        <a id="deeplinkBtn" href="#" class="btn btn-primary" target="_blank">
-          <i class="fa-solid fa-mobile-screen-button"></i> Open in Binance App
-        </a>
-        <button id="copyLinkBtn" class="btn btn-secondary" onclick="copyPaymentLink()">
-          <i class="fa-regular fa-copy"></i> Copy Payment Link
+      <!-- Network Switcher Tabs (Binance Pay, BEP20, TRC20, ERC20) -->
+      <div class="network-tabs">
+        <button class="network-tab-btn active bpay" id="tabBtnBpay" onclick="switchNetwork('bpay')">
+          <i class="fa-solid fa-bolt"></i> Binance Pay
         </button>
-        <button id="mockPayBtn" class="btn btn-simulate" onclick="simulatePayment()">
-          <i class="fa-solid fa-flask"></i> [Test Mode] Simulate Paid
+        <button class="network-tab-btn bep20" id="tabBtnBep20" onclick="switchNetwork('bep20')">
+          <i class="fa-solid fa-shield-halved"></i> BEP20 (BSC)
+        </button>
+        <button class="network-tab-btn trc20" id="tabBtnTrc20" onclick="switchNetwork('trc20')">
+          <i class="fa-solid fa-cube"></i> TRC20 (Tron)
+        </button>
+        <button class="network-tab-btn erc20" id="tabBtnErc20" onclick="switchNetwork('erc20')">
+          <i class="fa-brands fa-ethereum"></i> ERC20 (ETH)
         </button>
       </div>
-    </div>
 
-    <!-- Footer -->
-    <div class="order-info-footer">
-      <div>Order: <span class="order-id" id="orderIdDisplay">...</span></div>
-      <div class="status-indicator" id="statusIndicator">
-        <div class="pulse-dot"></div>
-        <span id="statusText">Awaiting Payment</span>
+      <div class="tab-content-area">
+        <!-- TAB 1: Binance Pay -->
+        <div id="panelBpay">
+          <div class="qr-container">
+            <img id="binanceQrImg" class="qr-image" src="" alt="Binance Pay QR" />
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+            Scan with <strong>Binance App</strong> or tap button below (0% Gas Fee):
+          </p>
+          <a id="binanceDeeplinkBtn" href="#" class="btn btn-primary" style="margin-bottom: 10px;">
+            <i class="fa-solid fa-wallet"></i> Pay with Binance App
+          </a>
+        </div>
+
+        <!-- TAB 2: BEP20 (BNB Smart Chain) -->
+        <div id="panelBep20" style="display: none;">
+          <div class="qr-container">
+            <canvas id="bep20QrCanvas" class="qr-canvas"></canvas>
+          </div>
+          <div class="address-display-box">
+            <div class="address-label">
+              <span>Deposit Address (BEP20 - BNB Smart Chain)</span>
+            </div>
+            <span class="address-val" id="addrBep20">0x...</span>
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrBep20')">
+              <i class="fa-regular fa-copy"></i> Copy BEP20 Address
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 3: TRC20 (Tron) -->
+        <div id="panelTrc20" style="display: none;">
+          <div class="qr-container">
+            <canvas id="trc20QrCanvas" class="qr-canvas"></canvas>
+          </div>
+          <div class="address-display-box">
+            <div class="address-label">
+              <span>Deposit Address (TRC20 - TRON USDT)</span>
+            </div>
+            <span class="address-val" id="addrTrc20">T...</span>
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrTrc20')">
+              <i class="fa-regular fa-copy"></i> Copy TRC20 Address
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 4: ERC20 (Ethereum) -->
+        <div id="panelErc20" style="display: none;">
+          <div class="qr-container">
+            <canvas id="erc20QrCanvas" class="qr-canvas"></canvas>
+          </div>
+          <div class="address-display-box">
+            <div class="address-label">
+              <span>Deposit Address (ERC20 - Ethereum USDT)</span>
+            </div>
+            <span class="address-val" id="addrErc20">0x...</span>
+            <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="copyAddr('addrErc20')">
+              <i class="fa-regular fa-copy"></i> Copy ERC20 Address
+            </button>
+          </div>
+        </div>
+
+        <!-- Direct Tx Hash Submission Box -->
+        <div class="tx-submit-card">
+          <label><i class="fa-solid fa-receipt"></i> Already Sent? Submit TxHash for Verification:</label>
+          <input type="text" id="txHashInput" placeholder="Paste Transaction Hash (TxID)..." />
+          <button class="btn btn-primary" style="padding: 8px 14px; font-size: 12px;" onclick="submitTxHash()">
+            <i class="fa-solid fa-check-double"></i> Verify Payment
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Success Overlay -->
-    <div class="success-overlay" id="successOverlay">
-      <div class="success-icon">
+    <div class="success-overlay" id="successState">
+      <div class="success-icon-wrap">
         <i class="fa-solid fa-check"></i>
       </div>
-      <h2 class="success-title">Payment Successful!</h2>
-      <p class="success-desc">Your transaction was verified on Binance Pay.</p>
-
-      <div class="receipt-box">
-        <div class="receipt-row">
-          <span class="receipt-label">Amount:</span>
-          <span class="receipt-val" id="receiptAmount">--</span>
-        </div>
-        <div class="receipt-row">
-          <span class="receipt-label">Order ID:</span>
-          <span class="receipt-val" id="receiptOrderId" style="font-family: monospace;">--</span>
-        </div>
-        <div class="receipt-row">
-          <span class="receipt-label">Status:</span>
-          <span class="receipt-val" style="color: var(--success);">COMPLETED</span>
-        </div>
-        <div class="receipt-row" id="txRow" style="display: none;">
-          <span class="receipt-label">TxID:</span>
-          <span class="receipt-val" id="receiptTxId" style="font-family: monospace; font-size: 11px;">--</span>
-        </div>
+      <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">Payment Completed!</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 24px;">
+        Your payment has been successfully verified on the blockchain network.
+      </p>
+      <div class="address-display-box" style="margin-bottom: 24px;">
+        <div class="address-label">Transaction Reference:</div>
+        <span class="address-val" id="paidTxId">--</span>
       </div>
-
-      <button class="btn btn-primary" onclick="returnToMerchant()">
+      <button class="btn btn-primary" onclick="window.close(); window.history.back();">
         <i class="fa-solid fa-arrow-left"></i> Return to Merchant
       </button>
     </div>
   </div>
 
   <script>
-    // Extract merchantTradeNo from URL path: /checkout/:merchantTradeNo
     const pathParts = window.location.pathname.split('/');
-    const merchantTradeNo = pathParts[pathParts.length - 1];
-
+    const tradeNo = pathParts[pathParts.length - 1] || 'demo';
     let currentOrder = null;
+    let activeNetwork = 'bpay';
+
+    const fallbackWallets = {
+      bep20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+      trc20: 'TYasdf123456789TronUSDTAddress9988',
+      erc20: '0x386Ac338C488F61a9B4810fe17Fa2a78BE456108',
+    };
+
+    function switchNetwork(net) {
+      activeNetwork = net;
+      const networks = ['bpay', 'bep20', 'trc20', 'erc20'];
+      networks.forEach(n => {
+        const btn = document.getElementById(`tabBtn${n.charAt(0).toUpperCase() + n.slice(1)}`);
+        const panel = document.getElementById(`panel${n.charAt(0).toUpperCase() + n.slice(1)}`);
+        if (panel) panel.style.display = (n === net) ? 'block' : 'none';
+        if (btn) {
+          if (n === net) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+    }
 
     async function loadOrder() {
       try {
-        const res = await fetch(`/api/v1/payments/${merchantTradeNo}`);
+        const res = await fetch(`/api/v1/payments/${tradeNo}`);
         const data = await res.json();
 
-        if (!data.success || !data.order) {
-          document.getElementById('goodsName').innerText = 'Order Not Found';
-          return;
-        }
+        if (data.success && data.order) {
+          currentOrder = data.order;
+          renderOrder(currentOrder);
 
-        currentOrder = data.order;
-        renderOrder(currentOrder);
-
-        if (currentOrder.status === 'PAID') {
-          showSuccess(currentOrder);
-        } else {
-          listenForPaymentUpdates();
+          if (currentOrder.status === 'PAID') {
+            showSuccess(currentOrder);
+          }
         }
       } catch (err) {
-        console.error('Failed to load order:', err);
+        console.error('Error loading order:', err);
       }
     }
 
     function renderOrder(order) {
-      document.getElementById('goodsName').innerText = order.goodsName || 'Digital Purchase';
-      document.getElementById('orderAmount').innerText = order.orderAmount;
-      document.getElementById('orderCurrency').innerText = order.currency || 'USDT';
-      document.getElementById('orderIdDisplay').innerText = order.merchantTradeNo;
+      document.getElementById('goodsName').innerText = order.goodsName || 'Digital Order';
+      document.getElementById('orderAmount').innerText = order.orderAmount || '0.00';
+      document.getElementById('currency').innerText = order.currency || 'USDT';
 
-      // QR Image
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(order.deeplink || order.checkoutUrl || window.location.href)}`;
-      document.getElementById('qrImage').src = order.qrcodeLink || qrUrl;
+      // 1. Binance Pay QR
+      const bpayQr = order.qrcodeLink || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(order.checkoutUrl || window.location.href)}`;
+      document.getElementById('binanceQrImg').src = bpayQr;
+      document.getElementById('binanceDeeplinkBtn').href = order.deeplink || order.checkoutUrl || '#';
 
-      // Direct Deep Link Button
-      const deeplinkBtn = document.getElementById('deeplinkBtn');
-      if (order.deeplink) {
-        deeplinkBtn.href = order.deeplink;
-      } else {
-        deeplinkBtn.href = order.checkoutUrl || '#';
-      }
+      // 2. Multi-chain addresses
+      const wallets = order.cryptoWallets || fallbackWallets;
+      const bep20Addr = wallets.bep20 || fallbackWallets.bep20;
+      const trc20Addr = wallets.trc20 || fallbackWallets.trc20;
+      const erc20Addr = wallets.erc20 || fallbackWallets.erc20;
 
-      // Hide mock pay button if not in mock mode
-      if (!order.mock) {
-        document.getElementById('mockPayBtn').style.display = 'none';
-      }
+      document.getElementById('addrBep20').innerText = bep20Addr;
+      document.getElementById('addrTrc20').innerText = trc20Addr;
+      document.getElementById('addrErc20').innerText = erc20Addr;
+
+      // Render Canvases
+      QRCode.toCanvas(document.getElementById('bep20QrCanvas'), bep20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#f0b90b' } });
+      QRCode.toCanvas(document.getElementById('trc20QrCanvas'), trc20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#ffffff' } });
+      QRCode.toCanvas(document.getElementById('erc20QrCanvas'), erc20Addr, { width: 190, margin: 1, color: { dark: '#0b0e11', light: '#61affe' } });
     }
 
-    function listenForPaymentUpdates() {
-      // Connect to Server-Sent Events (SSE)
-      const eventSource = new EventSource(`/api/v1/payments/stream/${merchantTradeNo}`);
-
-      eventSource.onmessage = (event) => {
-        try {
-          const updatedOrder = JSON.parse(event.data);
-          if (updatedOrder.status === 'PAID') {
-            showSuccess(updatedOrder);
-            eventSource.close();
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      };
-
-      eventSource.onerror = () => {
-        // Fallback polling every 3 seconds if SSE disconnects
-        setTimeout(pollStatus, 3000);
-      };
+    function copyAddr(elemId) {
+      const text = document.getElementById(elemId).innerText;
+      navigator.clipboard.writeText(text);
+      alert('Copied address to clipboard: ' + text);
     }
 
-    async function pollStatus() {
+    async function submitTxHash() {
+      const txHash = document.getElementById('txHashInput').value.trim();
+      if (!txHash) {
+        return alert('Please enter the Transaction Hash (TxID)');
+      }
+
       try {
-        const res = await fetch(`/api/v1/payments/${merchantTradeNo}`);
+        const res = await fetch('/api/v1/payments/submit-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            merchantTradeNo: tradeNo,
+            network: activeNetwork.toUpperCase(),
+            txHash,
+          }),
+        });
         const data = await res.json();
-        if (data.success && data.order && data.order.status === 'PAID') {
+        if (data.success) {
           showSuccess(data.order);
         } else {
-          setTimeout(pollStatus, 3000);
+          alert('Error: ' + data.error);
         }
       } catch (err) {
-        setTimeout(pollStatus, 4000);
+        alert('Verification error: ' + err.message);
       }
     }
 
     function showSuccess(order) {
-      const overlay = document.getElementById('successOverlay');
-      document.getElementById('receiptAmount').innerText = `${order.orderAmount} ${order.currency}`;
-      document.getElementById('receiptOrderId').innerText = order.merchantTradeNo;
-      if (order.transactionId) {
-        document.getElementById('txRow').style.display = 'flex';
-        document.getElementById('receiptTxId').innerText = order.transactionId;
+      document.getElementById('activeState').style.display = 'none';
+      document.getElementById('successState').style.display = 'block';
+      document.getElementById('paidTxId').innerText = order.transactionId || order.merchantTradeNo;
+    }
+
+    // SSE Live Stream for instant receipt
+    const evtSource = new EventSource(`/api/v1/payments/stream/${tradeNo}`);
+    evtSource.onmessage = (e) => {
+      const order = JSON.parse(e.data);
+      if (order.status === 'PAID') {
+        showSuccess(order);
       }
-      overlay.style.display = 'flex';
-    }
+    };
 
-    function copyPaymentLink() {
-      const url = window.location.href;
-      navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById('copyLinkBtn');
-        const orig = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Link Copied!';
-        setTimeout(() => { btn.innerHTML = orig; }, 2000);
-      });
-    }
-
-    async function simulatePayment() {
-      const btn = document.getElementById('mockPayBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Simulating...';
-
-      try {
-        await fetch(`/api/v1/payments/mock-pay/${merchantTradeNo}`, { method: 'POST' });
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    function returnToMerchant() {
-      if (currentOrder && currentOrder.returnUrl) {
-        window.location.href = currentOrder.returnUrl;
-      } else {
-        window.location.href = '/demo';
-      }
-    }
-
-    // Initialize
     loadOrder();
   </script>
 </body>

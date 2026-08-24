@@ -582,6 +582,37 @@
           </div>
         </form>
       </div>
+
+      <!-- Multi-Network Crypto Wallets (BEP20, TRC20, ERC20) -->
+      <div class="card" style="max-width: 700px; margin-top: 24px;">
+        <h3 class="card-title"><i class="fa-solid fa-wallet" style="color: var(--primary);"></i> Multi-Network Receiving Addresses (BEP20, TRC20, ERC20)</h3>
+        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+          Set your personal crypto addresses. When customers checkout, they can pay you directly on <strong>BNB Smart Chain (BEP20)</strong>, <strong>TRON (TRC20)</strong>, or <strong>Ethereum (ERC20)</strong>!
+        </p>
+
+        <form onsubmit="handleSaveCryptoWallets(event)">
+          <div class="form-group">
+            <label><span class="badge" style="background: rgba(240, 185, 11, 0.2); color: var(--primary);">BEP20</span> BNB Smart Chain Deposit Address (USDT / BNB)</label>
+            <input type="text" id="walletBep20" class="form-control" placeholder="0x1234... (BNB Smart Chain Address)" />
+          </div>
+
+          <div class="form-group">
+            <label><span class="badge" style="background: rgba(246, 70, 93, 0.2); color: var(--danger);">TRC20</span> TRON Network Deposit Address (USDT-TRC20)</label>
+            <input type="text" id="walletTrc20" class="form-control" placeholder="T... (Tron TRC20 Address)" />
+          </div>
+
+          <div class="form-group">
+            <label><span class="badge" style="background: rgba(97, 175, 254, 0.2); color: #61affe;">ERC20</span> Ethereum Network Deposit Address (USDT / ETH)</label>
+            <input type="text" id="walletErc20" class="form-control" placeholder="0x1234... (Ethereum ERC20 Address)" />
+          </div>
+
+          <div style="display: flex; gap: 12px; margin-top: 24px;">
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Save 3 Deposit Addresses
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- TAB 3: Live Binance Transactions -->
@@ -913,13 +944,41 @@
         }
       }
 
-      if (u.telegramConfig) {
-        document.getElementById('tgBotToken').value = u.telegramConfig.botToken || '';
-        renderBotProducts(u.telegramConfig.products || []);
+      if (u.cryptoWallets) {
+        document.getElementById('walletBep20').value = u.cryptoWallets.bep20 || '';
+        document.getElementById('walletTrc20').value = u.cryptoWallets.trc20 || '';
+        document.getElementById('walletErc20').value = u.cryptoWallets.erc20 || '';
       }
 
       document.getElementById('displayApiKey').innerText = u.gatewayApiKey || 'N/A';
       rawSecret = u.gatewayApiSecret || '';
+    }
+
+    async function handleSaveCryptoWallets(e) {
+      e.preventDefault();
+      const bep20 = document.getElementById('walletBep20').value;
+      const trc20 = document.getElementById('walletTrc20').value;
+      const erc20 = document.getElementById('walletErc20').value;
+
+      try {
+        const res = await fetch('/api/v1/merchant/crypto-wallets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ bep20, trc20, erc20 }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ 3 Crypto Addresses (BEP20, TRC20, ERC20) saved!');
+          loadDashboard();
+        } else {
+          alert('Error: ' + data.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     async function fetchAdminOverview() {
