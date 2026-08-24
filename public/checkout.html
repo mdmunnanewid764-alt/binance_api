@@ -9,8 +9,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <!-- Client-side QRCode generator library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
   <style>
     :root {
@@ -59,7 +57,7 @@
     }
 
     .card-header {
-      padding: 22px 28px 16px;
+      padding: 20px 24px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -88,7 +86,7 @@
     }
 
     .amount-value {
-      font-size: 36px;
+      font-size: 38px;
       font-weight: 800;
       color: #ffffff;
     }
@@ -106,13 +104,13 @@
       background: #23272e;
       border-radius: 12px;
       padding: 4px;
-      margin: 16px 24px 20px;
+      margin: 16px 20px 20px;
       gap: 4px;
     }
 
     .network-tab-btn {
       flex: 1;
-      padding: 8px 4px;
+      padding: 10px 4px;
       background: transparent;
       border: none;
       border-radius: 8px;
@@ -124,13 +122,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      gap: 3px;
     }
 
     .network-tab-btn.active {
       background: var(--card-bg);
       color: #fff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 
     .network-tab-btn.active.bpay { color: var(--primary); border-bottom: 2px solid var(--primary); }
@@ -145,16 +143,16 @@
 
     .qr-container {
       background: #ffffff;
-      padding: 14px;
+      padding: 12px;
       border-radius: 16px;
       display: inline-block;
       margin: 0 auto 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     }
 
-    canvas.qr-canvas {
-      width: 190px !important;
-      height: 190px !important;
+    .qr-img {
+      width: 180px;
+      height: 180px;
       display: block;
       margin: 0 auto;
     }
@@ -169,7 +167,7 @@
     }
 
     .address-label {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       margin-bottom: 6px;
       font-weight: 600;
@@ -181,10 +179,10 @@
       word-break: break-all;
       color: #ffffff;
       display: block;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       line-height: 1.5;
       background: #181a20;
-      padding: 8px 10px;
+      padding: 10px 12px;
       border-radius: 8px;
       border: 1px solid #2b313a;
     }
@@ -194,7 +192,7 @@
       padding: 12px 18px;
       border-radius: 12px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       border: none;
       transition: all 0.2s ease;
@@ -214,7 +212,7 @@
       background: #23272e;
       border-radius: 12px;
       padding: 14px;
-      margin-top: 14px;
+      margin-top: 16px;
       text-align: left;
     }
 
@@ -330,56 +328,49 @@
       </div>
 
       <div class="tab-content-area">
-        <!-- TAB 1: Binance Pay -->
-        <div id="panelBpay">
-          <div class="qr-container">
-            <canvas id="bpayQrCanvas" class="qr-canvas"></canvas>
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-            Scan with <strong>Binance App</strong> or tap button below (0% Gas Fee):
-          </p>
-          <a id="binanceDeeplinkBtn" href="#" class="btn btn-primary" style="margin-bottom: 10px;">
-            <i class="fa-solid fa-wallet"></i> Pay with Binance App
-          </a>
+        <!-- Common Live QR Code Container (Guaranteed High-Res Render) -->
+        <div class="qr-container">
+          <img id="mainQrImg" class="qr-img" src="" alt="Payment QR Code" />
         </div>
 
-        <!-- TAB 2: BEP20 (BNB Smart Chain) -->
+        <!-- TAB 1: Binance Pay Details -->
+        <div id="panelBpay">
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+            Scan with <strong>Binance App</strong> or click below to pay (0% Gas Fee):
+          </p>
+          <button id="btnPayBinanceApp" class="btn btn-primary" style="margin-bottom: 10px;" onclick="handleBinanceAppPay()">
+            <i class="fa-solid fa-wallet"></i> Pay with Binance App / Web
+          </button>
+        </div>
+
+        <!-- TAB 2: BEP20 (BNB Smart Chain) Details -->
         <div id="panelBep20" style="display: none;">
-          <div class="qr-container">
-            <canvas id="bep20QrCanvas" class="qr-canvas"></canvas>
-          </div>
           <div class="address-display-box">
             <div class="address-label">Deposit Address (BEP20 - BNB Smart Chain):</div>
             <span class="address-val" id="addrBep20">0x386Ac338C488F61a9B4810fe17Fa2a78BE456108</span>
-            <button class="btn btn-secondary" id="btnCopyBep20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrBep20', 'btnCopyBep20')">
+            <button class="btn btn-secondary" id="btnCopyBep20" style="padding: 10px 14px; font-size: 13px;" onclick="copyAddressText('addrBep20', 'btnCopyBep20')">
               <i class="fa-regular fa-copy"></i> Copy BEP20 Address
             </button>
           </div>
         </div>
 
-        <!-- TAB 3: TRC20 (Tron) -->
+        <!-- TAB 3: TRC20 (Tron) Details -->
         <div id="panelTrc20" style="display: none;">
-          <div class="qr-container">
-            <canvas id="trc20QrCanvas" class="qr-canvas"></canvas>
-          </div>
           <div class="address-display-box">
             <div class="address-label">Deposit Address (TRC20 - TRON USDT):</div>
             <span class="address-val" id="addrTrc20">TYasdf123456789TronUSDTAddress9988</span>
-            <button class="btn btn-secondary" id="btnCopyTrc20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrTrc20', 'btnCopyTrc20')">
+            <button class="btn btn-secondary" id="btnCopyTrc20" style="padding: 10px 14px; font-size: 13px;" onclick="copyAddressText('addrTrc20', 'btnCopyTrc20')">
               <i class="fa-regular fa-copy"></i> Copy TRC20 Address
             </button>
           </div>
         </div>
 
-        <!-- TAB 4: ERC20 (Ethereum) -->
+        <!-- TAB 4: ERC20 (Ethereum) Details -->
         <div id="panelErc20" style="display: none;">
-          <div class="qr-container">
-            <canvas id="erc20QrCanvas" class="qr-canvas"></canvas>
-          </div>
           <div class="address-display-box">
             <div class="address-label">Deposit Address (ERC20 - Ethereum USDT):</div>
             <span class="address-val" id="addrErc20">0x386Ac338C488F61a9B4810fe17Fa2a78BE456108</span>
-            <button class="btn btn-secondary" id="btnCopyErc20" style="padding: 8px 12px; font-size: 12px;" onclick="copyAddressText('addrErc20', 'btnCopyErc20')">
+            <button class="btn btn-secondary" id="btnCopyErc20" style="padding: 10px 14px; font-size: 13px;" onclick="copyAddressText('addrErc20', 'btnCopyErc20')">
               <i class="fa-regular fa-copy"></i> Copy ERC20 Address
             </button>
           </div>
@@ -389,7 +380,7 @@
         <div class="tx-submit-card">
           <label><i class="fa-solid fa-receipt"></i> Already Sent? Submit TxHash for Verification:</label>
           <input type="text" id="txHashInput" placeholder="Paste Transaction Hash (TxID)..." />
-          <button class="btn btn-primary" style="padding: 8px 14px; font-size: 12px;" onclick="submitTxHash()">
+          <button class="btn btn-primary" style="padding: 10px 14px; font-size: 13px;" onclick="submitTxHash()">
             <i class="fa-solid fa-check-double"></i> Verify Payment
           </button>
         </div>
@@ -448,46 +439,26 @@
         }
       });
 
-      // Redraw the active network canvas now that it is visible
-      renderActiveCanvas(net);
+      updateQrForNetwork(net);
     }
 
-    function renderActiveCanvas(net) {
+    function updateQrForNetwork(net) {
       if (!currentOrder) return;
       const wallets = currentOrder.cryptoWallets || defaultAddresses;
+      let qrData = '';
 
       if (net === 'bpay') {
-        const payTarget = currentOrder.deeplink || currentOrder.checkoutUrl || window.location.href;
-        QRCode.toCanvas(document.getElementById('bpayQrCanvas'), payTarget, {
-          width: 190,
-          margin: 1,
-          color: { dark: '#0b0e11', light: '#f0b90b' }
-        });
+        qrData = currentOrder.deeplink || currentOrder.checkoutUrl || window.location.href;
       } else if (net === 'bep20') {
-        const addr = (wallets.bep20 && wallets.bep20.length > 5) ? wallets.bep20 : defaultAddresses.bep20;
-        document.getElementById('addrBep20').innerText = addr;
-        QRCode.toCanvas(document.getElementById('bep20QrCanvas'), addr, {
-          width: 190,
-          margin: 1,
-          color: { dark: '#0b0e11', light: '#ffffff' }
-        });
+        qrData = (wallets.bep20 && wallets.bep20.length > 5) ? wallets.bep20 : defaultAddresses.bep20;
       } else if (net === 'trc20') {
-        const addr = (wallets.trc20 && wallets.trc20.length > 5) ? wallets.trc20 : defaultAddresses.trc20;
-        document.getElementById('addrTrc20').innerText = addr;
-        QRCode.toCanvas(document.getElementById('trc20QrCanvas'), addr, {
-          width: 190,
-          margin: 1,
-          color: { dark: '#0b0e11', light: '#ffffff' }
-        });
+        qrData = (wallets.trc20 && wallets.trc20.length > 5) ? wallets.trc20 : defaultAddresses.trc20;
       } else if (net === 'erc20') {
-        const addr = (wallets.erc20 && wallets.erc20.length > 5) ? wallets.erc20 : defaultAddresses.erc20;
-        document.getElementById('addrErc20').innerText = addr;
-        QRCode.toCanvas(document.getElementById('erc20QrCanvas'), addr, {
-          width: 190,
-          margin: 1,
-          color: { dark: '#0b0e11', light: '#ffffff' }
-        });
+        qrData = (wallets.erc20 && wallets.erc20.length > 5) ? wallets.erc20 : defaultAddresses.erc20;
       }
+
+      const qrImg = document.getElementById('mainQrImg');
+      qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
     }
 
     async function loadOrder() {
@@ -539,15 +510,28 @@
       document.getElementById('addrTrc20').innerText = trc20Addr;
       document.getElementById('addrErc20').innerText = erc20Addr;
 
-      document.getElementById('binanceDeeplinkBtn').href = order.deeplink || order.checkoutUrl || window.location.href;
+      updateQrForNetwork(activeNetwork);
+    }
 
-      renderActiveCanvas(activeNetwork);
+    function handleBinanceAppPay() {
+      if (!currentOrder) return;
+      
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const deeplink = currentOrder.deeplink;
+      const webCheckout = currentOrder.universalUrl || currentOrder.checkoutUrl || window.location.href;
+
+      if (isMobile && deeplink) {
+        // Open Binance App on mobile device
+        window.location.href = deeplink;
+      } else {
+        // Open web checkout or deeplink
+        window.open(webCheckout, '_blank');
+      }
     }
 
     function copyAddressText(elementId, btnId) {
       const text = document.getElementById(elementId).innerText.trim();
       
-      // Fallback cross-browser copy mechanism
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(() => {
           showCopyFeedback(btnId, text);
