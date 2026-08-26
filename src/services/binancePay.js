@@ -203,33 +203,48 @@ class BinancePayService {
       const assetsMap = new Map();
 
       let spotWarning = null;
-      // 1. Fetch Spot Wallet Balances
-      try {
-        const spotUrl = `${this.spotBaseUrl}/api/v3/account?${queryString}&signature=${signature}`;
-        const spotRes = await axios.get(spotUrl, {
-          headers: { 'X-MBX-APIKEY': key },
-          timeout: 10000,
-        });
+      const apiHosts = [
+        'https://api1.binance.com',
+        'https://api2.binance.com',
+        'https://api3.binance.com',
+        'https://api-gcp.binance.com',
+        'https://api.binance.com',
+      ];
 
-        if (spotRes.data?.balances) {
-          spotRes.data.balances.forEach(b => {
-            const free = parseFloat(b.free || 0);
-            const locked = parseFloat(b.locked || 0);
-            const total = free + locked;
-            if (total > 0) {
-              assetsMap.set(b.asset, {
-                asset: b.asset,
-                free: free.toFixed(4),
-                locked: locked.toFixed(4),
-                total: total.toFixed(4),
-                source: 'Spot',
-              });
-            }
+      // 1. Fetch Spot Wallet Balances across clusters
+      for (const host of apiHosts) {
+        try {
+          const spotUrl = `${host}/api/v3/account?${queryString}&signature=${signature}`;
+          const spotRes = await axios.get(spotUrl, {
+            headers: { 'X-MBX-APIKEY': key },
+            timeout: 6000,
           });
+
+          if (spotRes.data?.balances) {
+            spotRes.data.balances.forEach(b => {
+              const free = parseFloat(b.free || 0);
+              const locked = parseFloat(b.locked || 0);
+              const total = free + locked;
+              if (total > 0) {
+                assetsMap.set(b.asset, {
+                  asset: b.asset,
+                  free: free.toFixed(4),
+                  locked: locked.toFixed(4),
+                  total: total.toFixed(4),
+                  source: 'Spot',
+                });
+              }
+            });
+            spotWarning = null;
+            break; // Successfully fetched from cluster
+          }
+        } catch (spotErr) {
+          if (spotErr.response?.status === 451 || spotErr.response?.data?.msg?.includes('restricted location')) {
+            spotWarning = 'Binance Cloud Notice: Render US Datacenter IP is geo-restricted by Binance Spot API. Payment Gateways (Binance Pay & Multi-Chain) remain 100% active.';
+          } else {
+            spotWarning = spotErr.response?.data?.msg || spotErr.message;
+          }
         }
-      } catch (spotErr) {
-        spotWarning = spotErr.response?.data?.msg || spotErr.message;
-        console.warn('Binance Spot balance fetch notice:', spotWarning);
       }
 
       // 2. Fetch Funding / Binance Pay Wallet Balances (POST /sapi/v1/asset/getUserAsset)
