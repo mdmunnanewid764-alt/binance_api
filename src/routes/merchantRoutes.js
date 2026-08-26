@@ -78,7 +78,15 @@ merchantRouter.get('/binance-transactions', async (req, res) => {
     }
 
     const gatewayTxList = allOrders
-      .filter(o => o.status === 'PAID')
+      .filter(o => {
+        if (o.status !== 'PAID') return false;
+        if (o.mock === true) return false;
+        const txId = String(o.transactionId || '');
+        const tradeNo = String(o.merchantTradeNo || '');
+        if (txId.startsWith('mock_') || txId.startsWith('TEST_') || txId === 'tx_998877') return false;
+        if (tradeNo.startsWith('MOCK_') || tradeNo.startsWith('TEST_') || tradeNo.startsWith('WEBHOOK_TEST_') || tradeNo.startsWith('REFUND_TEST_') || tradeNo.startsWith('QUERY_TEST_')) return false;
+        return true;
+      })
       .map(o => ({
         id: o.transactionId || o.prepayId || o.merchantTradeNo,
         type: o.paidNetwork ? `${o.paidNetwork}` : 'Binance Pay',
