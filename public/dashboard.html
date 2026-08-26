@@ -1287,7 +1287,7 @@
 
     async function fetchLiveBinanceBalance() {
       const btn = document.getElementById('btnRefreshBalance');
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
 
       try {
         const res = await fetch('/api/v1/merchant/binance-balance', {
@@ -1302,9 +1302,13 @@
           if (data.balances && data.balances.length > 0) {
             container.innerHTML = data.balances.map(b => `
               <div class="asset-chip">
-                <strong>${b.asset}</strong>: <span>${b.free || b.total}</span>
+                <strong>${b.asset}</strong>: <span>${b.total || b.free}</span>
+                ${b.estimatedUsdt && b.estimatedUsdt !== '0.00' && b.asset !== 'USDT' ? `<span style="font-size: 11px; color: var(--primary);">(~$${b.estimatedUsdt})</span>` : ''}
+                <span style="font-size: 9px; background: rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 4px; margin-left: 4px;">${b.source || 'Spot'}</span>
               </div>
             `).join('');
+          } else if (data.warning) {
+            container.innerHTML = `<div class="asset-chip"><span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> ${data.warning}</span></div>`;
           } else {
             container.innerHTML = '<div class="asset-chip"><span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> 0.00 USDT (No non-zero assets in wallet)</span></div>';
           }
@@ -1312,7 +1316,7 @@
       } catch (err) {
         console.error('Failed to load balance:', err);
       } finally {
-        btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Balance';
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Refresh Balance';
       }
     }
 
