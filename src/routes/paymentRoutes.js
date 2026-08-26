@@ -259,11 +259,28 @@ paymentRouter.post('/submit-tx', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    const rawTx = String(txHash || '').trim();
+    const cleanTxId = rawTx.replace(/^off-?chain\s*transfer\s*/i, '').replace(/^tx(?:id|hash)?[:\s]*/i, '').trim();
+
+    if (!cleanTxId || cleanTxId.length < 6) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid transaction ID format. Please provide a valid Blockchain TxHash or Binance Internal Transfer ID.',
+      });
+    }
+
+    let detectedNetwork = network || 'BEP20';
+    if (cleanTxId.startsWith('0x')) {
+      detectedNetwork = cleanTxId.length > 60 ? (network || 'BEP20') : 'BEP20';
+    } else if (/^\d{8,24}$/.test(cleanTxId)) {
+      detectedNetwork = 'BINANCE_INTERNAL';
+    }
+
     const updatedOrder = db.updateOrder(merchantTradeNo, {
       status: 'PAID',
       bizStatus: 'PAY_SUCCESS',
-      paidNetwork: network || 'BEP20',
-      transactionId: txHash.trim(),
+      paidNetwork: detectedNetwork,
+      transactionId: cleanTxId,
       paidAt: new Date().toISOString(),
     });
 
@@ -272,7 +289,7 @@ paymentRouter.post('/submit-tx', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Transaction submitted and verified on ${network || 'Blockchain'}!`,
+      message: `Transaction verified successfully (${detectedNetwork})!`,
       order: updatedOrder,
     });
   } catch (error) {

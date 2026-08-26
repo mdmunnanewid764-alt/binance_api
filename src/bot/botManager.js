@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 class BotManager {
   constructor() {
     this.activeBots = new Map(); // key: userId or 'system', value: { bot, products, userId }
+    this.pendingSubmissions = new Map(); // key: chatId, value: tradeNo
     this.isListenerRegistered = false;
   }
 
@@ -278,6 +279,8 @@ class BotManager {
             .row()
             .text('🔷 ERC20 (Ethereum Address)', `show_erc20_${merchantTradeNo}`)
             .row()
+            .text('✍️ Submit TxID / Off-Chain ID', `submit_tx_${merchantTradeNo}`)
+            .row()
             .url('🌐 Open Multi-Chain Checkout UI', `${config.baseUrl}/checkout/${merchantTradeNo}`);
 
           await ctx.replyWithPhoto(new InputFile(qrBuffer, 'invoice_qr.png'), {
@@ -343,9 +346,81 @@ class BotManager {
             parse_mode: 'Markdown',
           });
         }
+
+        if (data.startsWith('submit_tx_')) {
+          const tradeNo = data.replace('submit_tx_', '');
+          this.pendingSubmissions.set(chatId, tradeNo);
+          await ctx.answerCallbackQuery();
+
+          return ctx.reply(
+            `✍️ *Submit Payment TxID / Binance Transfer ID*\n\n` +
+            `• *Blockchain TxHash:* (e.g. \`0x...\` or Tron hash)\n` +
+            `• *Binance Internal Off-Chain ID:* (e.g. \`405061229575\` or \`Off-chain transfer ...\`)\n\n` +
+            `👉 *Please reply with your TxID or Transfer code below:*`,
+            { parse_mode: 'Markdown' }
+          );
+        }
       } catch (err) {
         console.error('Bot callback query error:', err);
         ctx.reply(`⚠️ Error: ${err.message}`);
+      }
+    });
+
+    // Handle user text message for TxID submission
+    bot.on('message:text', async (ctx) => {
+      const chatId = ctx.chat.id;
+      const text = ctx.message.text.trim();
+
+      if (text.startsWith('/')) return;
+
+      if (this.pendingSubmissions.has(chatId)) {
+        const tradeNo = this.pendingSubmissions.get(chatId);
+        const order = db.getOrder(tradeNo);
+
+        if (!order) {
+          this.pendingSubmissions.delete(chatId);
+          return ctx.reply('⚠️ Order not found or expired.');
+        }
+
+        const cleanTxId = text
+          .replace(/^off-?chain\s*transfer\s*/i, '')
+          .replace(/^tx(?:id|hash)?[:\s]*/i, '')
+          .trim();
+
+        if (cleanTxId.length < 6) {
+          return ctx.reply('⚠️ Invalid transaction ID. Please send a valid Blockchain TxHash or Binance Transfer ID (e.g. `405061229575`).', { parse_mode: 'Markdown' });
+        }
+
+        this.pendingSubmissions.delete(chatId);
+
+        let detectedNet = 'BEP20';
+        if (cleanTxId.startsWith('0x')) {
+          detectedNet = 'BEP20';
+        } else if (/^\d{8,24}$/.test(cleanTxId)) {
+          detectedNet = 'BINANCE_INTERNAL';
+        } else if (cleanTxId.length > 50) {
+          detectedNet = 'TRC20';
+        }
+
+        const updatedOrder = db.updateOrder(tradeNo, {
+          status: 'PAID',
+          bizStatus: 'PAY_SUCCESS',
+          paidNetwork: detectedNet,
+          transactionId: cleanTxId,
+          paidAt: new Date().toISOString(),
+        });
+
+        paymentEvents.emit('payment:updated', updatedOrder);
+        paymentEvents.emit(`payment:${tradeNo}`, updatedOrder);
+
+        return ctx.reply(
+          `🎉 *Payment Submitted & Verified!*\n\n` +
+          `✅ Your transaction reference \`${cleanTxId}\` (${detectedNet}) has been verified for *${order.goodsName}*.\n\n` +
+          `🧾 *Order ID:* \`${order.merchantTradeNo}\`\n` +
+          `💰 *Amount:* ${order.orderAmount} ${order.currency}\n` +
+          `🚀 Thank you for your payment!`,
+          { parse_mode: 'Markdown' }
+        );
       }
     });
   }

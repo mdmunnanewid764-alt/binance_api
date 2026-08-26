@@ -529,10 +529,10 @@ x-api-key: YOUR_MERCHANT_API_KEY</pre>
       </div>
     </section>
 
-    <!-- Section 5: Submit TxHash -->
+    <!-- Section 5: Submit TxHash / Binance Off-Chain ID -->
     <section id="submit-tx" class="doc-section">
-      <h1>Submit On-Chain TxHash</h1>
-      <p>Allows buyers or automated bots to submit the blockchain transaction hash for direct BEP20, TRC20, or ERC20 transfers.</p>
+      <h1>Submit TxHash or Binance Internal Transfer ID</h1>
+      <p>Allows buyers, checkout pages, or automated Telegram bots to submit the payment verification reference for <strong>On-Chain (BEP20, TRC20, ERC20)</strong> or <strong>Binance Internal Off-Chain Transfers</strong> (e.g. <code>405061229575</code>).</p>
 
       <div class="endpoint-card">
         <div class="endpoint-header">
@@ -540,12 +540,23 @@ x-api-key: YOUR_MERCHANT_API_KEY</pre>
           <span class="endpoint-path">/api/v1/payments/submit-tx</span>
         </div>
 
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;"><strong>Example 1: Blockchain On-Chain TxHash (BEP20 / TRC20 / ERC20)</strong></p>
         <div class="code-box">
           <button class="copy-btn" onclick="copySnippet('submitTxBody')">Copy</button>
           <pre id="submitTxBody">{
   "merchantTradeNo": "ORDER_1787598000",
   "network": "BEP20",
-  "txHash": "0x78ab9c...blockchain_hash_here"
+  "txHash": "0x78ab9c456fedcba9876543210123456789abcdef..."
+}</pre>
+        </div>
+
+        <p style="font-size: 13px; color: var(--text-muted); margin-top: 16px; margin-bottom: 12px;"><strong>Example 2: Binance Internal / Off-Chain Transfer ID</strong></p>
+        <div class="code-box">
+          <button class="copy-btn" onclick="copySnippet('submitOffChainBody')">Copy</button>
+          <pre id="submitOffChainBody">{
+  "merchantTradeNo": "ORDER_1787598000",
+  "network": "BINANCE_INTERNAL",
+  "txHash": "405061229575"
 }</pre>
         </div>
       </div>
