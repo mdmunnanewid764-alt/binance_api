@@ -149,3 +149,51 @@ test('POST /api/v1/payments/refund - Refund paid order', async () => {
   const order = db.getOrder(tradeNo);
   assert.equal(order.status, 'REFUNDED');
 });
+
+test('POST /api/v1/payments/submit-tx - Verify on-chain TxHash submission and Anti-Fraud duplicate rejection', async () => {
+  const tradeNo1 = `SUBMIT_TX_1_${Date.now()}`;
+  const tradeNo2 = `SUBMIT_TX_2_${Date.now()}`;
+  const txHash = `TEST_TX_HASH_${Date.now()}`;
+
+  // Create Order 1
+  await axios.post(`${baseUrl}/api/v1/payments/create`, {
+    merchantTradeNo: tradeNo1,
+    orderAmount: '100.00',
+    currency: 'USDT',
+    goodsName: 'Order 1',
+  });
+
+  // Submit valid TxHash for Order 1
+  const submitRes1 = await axios.post(`${baseUrl}/api/v1/payments/submit-tx`, {
+    merchantTradeNo: tradeNo1,
+    network: 'BEP20',
+    txHash: txHash,
+  });
+
+  assert.equal(submitRes1.status, 200);
+  assert.equal(submitRes1.data.success, true);
+  assert.equal(submitRes1.data.order.status, 'PAID');
+  assert.equal(submitRes1.data.order.transactionId, txHash);
+
+  // Create Order 2
+  await axios.post(`${baseUrl}/api/v1/payments/create`, {
+    merchantTradeNo: tradeNo2,
+    orderAmount: '100.00',
+    currency: 'USDT',
+    goodsName: 'Order 2',
+  });
+
+  // Attempt to reuse the SAME TxHash for Order 2 (Double-Spend attempt)
+  try {
+    await axios.post(`${baseUrl}/api/v1/payments/submit-tx`, {
+      merchantTradeNo: tradeNo2,
+      network: 'BEP20',
+      txHash: txHash,
+    });
+    assert.fail('Should have rejected duplicate txHash');
+  } catch (err) {
+    assert.equal(err.response.status, 400);
+    assert.equal(err.response.data.success, false);
+    assert.equal(err.response.data.error, 'This transaction has already been used for another deposit!');
+  }
+});

@@ -282,6 +282,17 @@ class Database {
     return Object.values(this.data.orders).find(o => o.prepayId === prepayId) || null;
   }
 
+  isTxUsed(txHash, currentTradeNo = null) {
+    if (!txHash) return false;
+    const clean = String(txHash).trim().toLowerCase();
+    return Object.values(this.data.orders).some(o => {
+      if (currentTradeNo && o.merchantTradeNo === currentTradeNo) return false;
+      if (o.status !== 'PAID') return false;
+      const orderTx = String(o.transactionId || '').trim().toLowerCase();
+      return orderTx === clean;
+    });
+  }
+
   updateOrder(merchantTradeNo, updates) {
     if (!this.data.orders[merchantTradeNo]) return null;
     this.data.orders[merchantTradeNo] = {

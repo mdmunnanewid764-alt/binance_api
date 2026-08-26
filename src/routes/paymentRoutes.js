@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { binancePayService } from '../services/binancePay.js';
+import { blockchainVerifier } from '../services/blockchainVerifier.js';
 import { db } from '../db/database.js';
 import { paymentEvents } from '../services/eventEmitter.js';
 import { config } from '../config/env.js';
@@ -245,6 +246,7 @@ paymentRouter.get('/:merchantTradeNo', async (req, res) => {
 /**
  * POST /api/v1/payments/submit-tx
  * Submit TxHash for BEP20, TRC20, or ERC20 blockchain payment
+ * Features: Real On-Chain RPC Verification, Anti-Fraud Double-Spend Prevention, Strict Amount Validation
  */
 paymentRouter.post('/submit-tx', async (req, res) => {
   try {
@@ -254,9 +256,17 @@ paymentRouter.post('/submit-tx', async (req, res) => {
       return res.status(400).json({ success: false, error: 'merchantTradeNo and txHash are required' });
     }
 
-    const order = db.getOrder(merchantTradeNo);
+    let order = db.getOrder(merchantTradeNo);
     if (!order) {
       return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    if (order.status === 'PAID') {
+      return res.json({
+        success: true,
+        message: 'Order has already been marked as PAID!',
+        order,
+      });
     }
 
     const rawTx = String(txHash || '').trim();
@@ -269,13 +279,59 @@ paymentRouter.post('/submit-tx', async (req, res) => {
       });
     }
 
-    let detectedNetwork = network || 'BEP20';
-    if (cleanTxId.startsWith('0x')) {
-      detectedNetwork = cleanTxId.length > 60 ? (network || 'BEP20') : 'BEP20';
-    } else if (/^\d{8,24}$/.test(cleanTxId)) {
-      detectedNetwork = 'BINANCE_INTERNAL';
+    // 1. Anti-Fraud & Double-Spend Prevention Check
+    if (db.isTxUsed(cleanTxId, merchantTradeNo)) {
+      return res.status(400).json({
+        success: false,
+        error: 'This transaction has already been used for another deposit!',
+      });
     }
 
+    // 2. Identify network & merchant deposit addresses
+    let detectedNetwork = (network || '').toUpperCase();
+    if (!detectedNetwork) {
+      if (cleanTxId.startsWith('0x')) {
+        detectedNetwork = 'BEP20';
+      } else if (/^\d{8,24}$/.test(cleanTxId)) {
+        detectedNetwork = 'BINANCE_INTERNAL';
+      } else {
+        detectedNetwork = 'TRC20';
+      }
+    }
+
+    const merchantUser = order.userId ? db.getUserById(order.userId) : null;
+    const cryptoWallets = order.cryptoWallets || merchantUser?.cryptoWallets || {};
+
+    let expectedRecipient = null;
+    if (detectedNetwork === 'BEP20' || detectedNetwork === 'BSC') {
+      expectedRecipient = cryptoWallets.bep20 || null;
+    } else if (detectedNetwork === 'TRC20' || detectedNetwork === 'TRON') {
+      expectedRecipient = cryptoWallets.trc20 || null;
+    } else if (detectedNetwork === 'ERC20' || detectedNetwork === 'ETH') {
+      expectedRecipient = cryptoWallets.erc20 || null;
+    }
+
+    // 3. Real On-Chain Blockchain Verification
+    if (detectedNetwork !== 'BINANCE_INTERNAL') {
+      const verification = await blockchainVerifier.verifyTransaction({
+        network: detectedNetwork,
+        txHash: cleanTxId,
+        expectedRecipient,
+        expectedAmount: order.orderAmount,
+      });
+
+      if (!verification.isValid) {
+        return res.status(400).json({
+          success: false,
+          error: verification.reason || 'Blockchain transaction verification failed.',
+          details: verification,
+        });
+      }
+
+      detectedNetwork = verification.network || detectedNetwork;
+    }
+
+    // 4. Mark order as PAID after successful verification
     const updatedOrder = db.updateOrder(merchantTradeNo, {
       status: 'PAID',
       bizStatus: 'PAY_SUCCESS',
@@ -289,10 +345,11 @@ paymentRouter.post('/submit-tx', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Transaction verified successfully (${detectedNetwork})!`,
+      message: `Transaction verified successfully on-chain (${detectedNetwork})!`,
       order: updatedOrder,
     });
   } catch (error) {
+    console.error('Error verifying submitted transaction:', error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });
