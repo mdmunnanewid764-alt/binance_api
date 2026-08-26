@@ -163,20 +163,29 @@ class BinancePayService {
   }
 
   /**
-   * Sync server time with Binance to prevent -1021 recvWindow timestamp errors
+   * Get server time offset to sync timestamps with Binance
    */
   async getServerTimeOffset() {
-    try {
-      const res = await axios.get(`${this.spotBaseUrl}/api/v3/time`, { timeout: 4000 });
-      if (res.data?.serverTime) {
-        return res.data.serverTime - Date.now();
-      }
-    } catch (e) {}
+    const timeHosts = [
+      'https://api.binance.me/api/v3/time',
+      'https://api1.binance.com/api/v3/time',
+      'https://api2.binance.com/api/v3/time',
+      'https://api.binance.com/api/v3/time',
+    ];
+
+    for (const host of timeHosts) {
+      try {
+        const res = await axios.get(host, { timeout: 3000 });
+        if (res.data?.serverTime) {
+          return res.data.serverTime - Date.now();
+        }
+      } catch (err) {}
+    }
     return 0;
   }
 
   /**
-   * Fetch 100% REAL Live Binance Wallet Balance (Spot & Funding assets with live USDT conversion)
+   * Fetch 100% REAL Live Binance Wallet Balances (Spot + Funding)
    */
   async getAccountBalance(apiKey, secretKey) {
     const key = apiKey || this.apiKey;
@@ -186,9 +195,10 @@ class BinancePayService {
       return {
         success: true,
         realData: true,
+        isConfigured: false,
         totalEstimatedUSDT: '0.00',
         balances: [],
-        message: 'No Binance API keys configured yet. Please connect your keys in Connect Binance.',
+        message: 'No Binance API keys connected yet. Please connect your API Key and Secret in the Connect Binance tab.',
         updatedAt: new Date().toISOString(),
       };
     }
@@ -202,14 +212,12 @@ class BinancePayService {
 
       const assetsMap = new Map();
 
-      let spotWarning = null;
       const apiHosts = [
         'https://api.binance.me',
         'https://api1.binance.com',
         'https://api2.binance.com',
         'https://api3.binance.com',
         'https://api-gcp.binance.com',
-        'https://api.binance.com',
       ];
 
       // 1. Fetch Spot Wallet Balances across clusters
@@ -229,77 +237,71 @@ class BinancePayService {
               if (total > 0) {
                 assetsMap.set(b.asset, {
                   asset: b.asset,
-                  free: free.toFixed(4),
-                  locked: locked.toFixed(4),
-                  total: total.toFixed(4),
-                  source: 'Binance Spot',
+                  free: free >= 1 ? free.toFixed(4) : free.toString(),
+                  locked: locked >= 1 ? locked.toFixed(4) : locked.toString(),
+                  total: total >= 1 ? total.toFixed(4) : total.toString(),
+                  source: 'Spot',
                 });
               }
             });
-            spotWarning = null;
-            break; // Successfully fetched from cluster
+            break; // Successfully fetched
           }
-        } catch (spotErr) {
-          if (spotErr.response?.status === 451 || spotErr.response?.data?.msg?.includes('restricted location')) {
-            spotWarning = null; // Will fallback to multi-chain & store sales cleanly
-          } else {
-            spotWarning = spotErr.response?.data?.msg || spotErr.message;
-          }
-        }
+        } catch (spotErr) {}
       }
 
-      // 2. Fetch Funding / Binance Pay Wallet Balances (POST /sapi/v1/asset/getUserAsset)
-      try {
-        const fundingTimestamp = Date.now() + timeOffset;
-        const fundingQuery = `timestamp=${fundingTimestamp}&recvWindow=${recvWindow}`;
-        const fundingSig = this.buildSpotSignature(fundingQuery, secret);
-        const fundingUrl = `${this.spotBaseUrl}/sapi/v1/asset/getUserAsset?${fundingQuery}&signature=${fundingSig}`;
-        
-        const fundingRes = await axios.post(fundingUrl, {}, {
-          headers: { 'X-MBX-APIKEY': key },
-          timeout: 10000,
-        });
+      // 2. Fetch Funding Wallet Balances (POST /sapi/v1/asset/getUserAsset)
+      for (const host of apiHosts) {
+        try {
+          const fundingTimestamp = Date.now() + timeOffset;
+          const fundingQuery = `timestamp=${fundingTimestamp}&recvWindow=${recvWindow}`;
+          const fundingSig = this.buildSpotSignature(fundingQuery, secret);
+          const fundingUrl = `${host}/sapi/v1/asset/getUserAsset?${fundingQuery}&signature=${fundingSig}`;
 
-        if (Array.isArray(fundingRes.data)) {
-          fundingRes.data.forEach(b => {
-            const free = parseFloat(b.free || 0);
-            const locked = parseFloat(b.locked || b.freeze || 0);
-            const total = free + locked;
-            if (total > 0) {
-              if (assetsMap.has(b.asset)) {
-                const existing = assetsMap.get(b.asset);
-                const combinedTotal = (parseFloat(existing.total) + total).toFixed(4);
-                const combinedFree = (parseFloat(existing.free) + free).toFixed(4);
-                assetsMap.set(b.asset, {
-                  ...existing,
-                  free: combinedFree,
-                  total: combinedTotal,
-                  source: 'Spot + Funding',
-                });
-              } else {
-                assetsMap.set(b.asset, {
-                  asset: b.asset,
-                  free: free.toFixed(4),
-                  locked: locked.toFixed(4),
-                  total: total.toFixed(4),
-                  source: 'Funding',
-                });
-              }
-            }
+          const fundingRes = await axios.post(fundingUrl, {}, {
+            headers: { 'X-MBX-APIKEY': key },
+            timeout: 7000,
           });
-        }
-      } catch (fundErr) {
-        // Fallback for funding wallet
+
+          if (Array.isArray(fundingRes.data)) {
+            fundingRes.data.forEach(b => {
+              const free = parseFloat(b.free || 0);
+              const locked = parseFloat(b.locked || b.freeze || 0);
+              const total = free + locked;
+              if (total > 0) {
+                if (assetsMap.has(b.asset)) {
+                  const existing = assetsMap.get(b.asset);
+                  const combinedTotal = parseFloat(existing.total) + total;
+                  const combinedFree = parseFloat(existing.free) + free;
+                  assetsMap.set(b.asset, {
+                    ...existing,
+                    free: combinedFree >= 1 ? combinedFree.toFixed(4) : combinedFree.toString(),
+                    total: combinedTotal >= 1 ? combinedTotal.toFixed(4) : combinedTotal.toString(),
+                    source: 'Spot + Funding',
+                  });
+                } else {
+                  assetsMap.set(b.asset, {
+                    asset: b.asset,
+                    free: free >= 1 ? free.toFixed(4) : free.toString(),
+                    locked: locked >= 1 ? locked.toFixed(4) : locked.toString(),
+                    total: total >= 1 ? total.toFixed(4) : total.toString(),
+                    source: 'Funding',
+                  });
+                }
+              }
+            });
+            break;
+          }
+        } catch (fundErr) {}
       }
 
       const allBalances = Array.from(assetsMap.values());
 
-      // 3. Fetch Live Prices to compute Total Estimated USDT Value
+      // 3. Fetch Live Prices from Binance to compute Total Estimated USDT Value
       let totalEstimatedUSDT = 0;
       let pricesMap = {};
 
       try {
-        const priceRes = await axios.get(`${this.spotBaseUrl}/api/v3/ticker/price`, { timeout: 5000 });
+        const priceRes = await axios.get('https://api.binance.me/api/v3/ticker/price', { timeout: 5000 });
         if (Array.isArray(priceRes.data)) {
           priceRes.data.forEach(p => {
             pricesMap[p.symbol] = parseFloat(p.price || 0);
@@ -309,38 +311,42 @@ class BinancePayService {
 
       allBalances.forEach(b => {
         const amount = parseFloat(b.total || 0);
-        if (b.asset === 'USDT' || b.asset === 'USDC' || b.asset === 'BUSD' || b.asset === 'FDUSD' || b.asset === 'DAI') {
+        if (['USDT', 'USDC', 'BUSD', 'FDUSD', 'DAI'].includes(b.asset)) {
           totalEstimatedUSDT += amount;
-          b.estimatedUsdt = amount.toFixed(2);
+          b.estimatedUsdt = amount >= 1 ? amount.toFixed(2) : amount.toFixed(4);
         } else if (pricesMap[`${b.asset}USDT`]) {
           const usdtVal = amount * pricesMap[`${b.asset}USDT`];
           totalEstimatedUSDT += usdtVal;
-          b.estimatedUsdt = usdtVal.toFixed(2);
+          b.estimatedUsdt = usdtVal >= 1 ? usdtVal.toFixed(2) : usdtVal.toFixed(4);
         } else {
           b.estimatedUsdt = '0.00';
         }
       });
 
-      // Sort with highest USDT value first
       allBalances.sort((a, b) => parseFloat(b.estimatedUsdt || b.total) - parseFloat(a.estimatedUsdt || a.total));
+
+      let formattedTotal = '0.00';
+      if (totalEstimatedUSDT > 0) {
+        formattedTotal = totalEstimatedUSDT >= 1 ? totalEstimatedUSDT.toFixed(2) : totalEstimatedUSDT.toFixed(4);
+      }
 
       return {
         success: true,
         realData: true,
-        totalEstimatedUSDT: totalEstimatedUSDT.toFixed(2),
+        isConfigured: true,
+        totalEstimatedUSDT: formattedTotal,
         balances: allBalances,
         totalAssetsCount: allBalances.length,
-        warning: allBalances.length === 0 ? spotWarning : null,
         updatedAt: new Date().toISOString(),
       };
     } catch (error) {
-      console.warn('Real Binance Balance Fetch Error:', error.response?.data?.msg || error.message);
+      console.warn('Binance Balance Fetch Error:', error.response?.data?.msg || error.message);
       return {
         success: true,
         realData: true,
         totalEstimatedUSDT: '0.00',
         balances: [],
-        warning: error.response?.data?.msg || error.message || 'Unable to fetch Binance balance.',
+        message: error.response?.data?.msg || error.message,
         updatedAt: new Date().toISOString(),
       };
     }
