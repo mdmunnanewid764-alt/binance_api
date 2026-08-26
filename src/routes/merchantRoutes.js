@@ -63,15 +63,62 @@ merchantRouter.get('/signed-binance-request', async (req, res) => {
 
 /**
  * GET /api/v1/merchant/binance-transactions
- * Fetch recent Binance wallet / pay transactions
+ * Fetch recent Binance wallet deposits & all verified payment gateway transactions
  */
 merchantRouter.get('/binance-transactions', async (req, res) => {
   try {
     const apiKey = req.user.binanceConfig?.apiKey;
     const secretKey = req.user.binanceConfig?.secretKey;
+    const isSuperAdmin = req.user.role === 'ADMIN';
 
-    const txData = await binancePayService.getAccountTransactions(apiKey, secretKey);
-    return res.json(txData);
+    // 1. Gather all verified & paid gateway orders
+    let allOrders = Object.values(db.data.orders || {});
+    if (!isSuperAdmin) {
+      allOrders = allOrders.filter(o => o.userId === req.user.id);
+    }
+
+    const gatewayTxList = allOrders
+      .filter(o => o.status === 'PAID')
+      .map(o => ({
+        id: o.transactionId || o.prepayId || o.merchantTradeNo,
+        type: o.paidNetwork ? `${o.paidNetwork}` : 'Binance Pay',
+        asset: o.currency || 'USDT',
+        amount: o.orderAmount,
+        status: 'SUCCESS',
+        time: o.paidAt || o.createdAt,
+        goodsName: o.goodsName,
+        tradeNo: o.merchantTradeNo,
+      }));
+
+    // 2. Fetch live Binance API deposits if configured
+    let binanceApiDeposits = [];
+    if (apiKey && secretKey) {
+      try {
+        const bRes = await binancePayService.getAccountTransactions(apiKey, secretKey);
+        if (bRes.success && Array.isArray(bRes.transactions)) {
+          binanceApiDeposits = bRes.transactions;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Merge and deduplicate by transaction ID
+    const txMap = new Map();
+    gatewayTxList.forEach(t => {
+      if (t.id) txMap.set(t.id, t);
+    });
+    binanceApiDeposits.forEach(t => {
+      if (t.id) txMap.set(t.id, t);
+    });
+
+    const combinedList = Array.from(txMap.values()).sort((a, b) => 
+      new Date(b.time).getTime() - new Date(a.time).getTime()
+    );
+
+    return res.json({
+      success: true,
+      realData: true,
+      transactions: combinedList,
+    });
   } catch (error) {
     console.error('Error fetching Binance transactions:', error);
     return res.status(500).json({ success: false, error: error.message });
