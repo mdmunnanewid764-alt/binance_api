@@ -202,6 +202,7 @@ class BinancePayService {
 
       const assetsMap = new Map();
 
+      let spotWarning = null;
       // 1. Fetch Spot Wallet Balances
       try {
         const spotUrl = `${this.spotBaseUrl}/api/v3/account?${queryString}&signature=${signature}`;
@@ -227,7 +228,8 @@ class BinancePayService {
           });
         }
       } catch (spotErr) {
-        console.warn('Binance Spot balance fetch notice:', spotErr.response?.data?.msg || spotErr.message);
+        spotWarning = spotErr.response?.data?.msg || spotErr.message;
+        console.warn('Binance Spot balance fetch notice:', spotWarning);
       }
 
       // 2. Fetch Funding / Binance Pay Wallet Balances (POST /sapi/v1/asset/getUserAsset)
@@ -271,7 +273,7 @@ class BinancePayService {
           });
         }
       } catch (fundErr) {
-        // Fallback for funding wallet if sapi endpoint varies
+        // Fallback for funding wallet
       }
 
       const allBalances = Array.from(assetsMap.values());
@@ -312,6 +314,7 @@ class BinancePayService {
         totalEstimatedUSDT: totalEstimatedUSDT.toFixed(2),
         balances: allBalances,
         totalAssetsCount: allBalances.length,
+        warning: allBalances.length === 0 ? spotWarning : null,
         updatedAt: new Date().toISOString(),
       };
     } catch (error) {
