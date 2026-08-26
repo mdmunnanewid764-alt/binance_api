@@ -425,11 +425,6 @@
           </button>
         </li>
         <li class="nav-item">
-          <button id="tabNavBot" onclick="showTab('bot')">
-            <i class="fa-brands fa-telegram" style="color: var(--info);"></i> Telegram Bot
-          </button>
-        </li>
-        <li class="nav-item">
           <button id="tabNavApi" onclick="showTab('api')">
             <i class="fa-solid fa-key"></i> Gateway API Keys
           </button>
@@ -645,61 +640,6 @@
       </div>
     </div>
 
-    <!-- TAB 4: Telegram Bot -->
-    <div id="sectionBot" style="display: none;">
-      <div class="card">
-        <h3 class="card-title"><i class="fa-brands fa-telegram" style="color: var(--info);"></i> Connect Your Telegram Bot</h3>
-        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
-          Create a bot via <a href="https://t.me/BotFather" target="_blank" style="color: var(--primary);">@BotFather</a> and paste the Bot Token here. Your bot will automatically sell products with Binance Pay!
-        </p>
-
-        <div style="max-width: 650px;">
-          <div class="form-group">
-            <label>Telegram Bot Token</label>
-            <input type="text" id="tgBotToken" class="form-control" placeholder="123456789:ABCDefGhIJKlmNoPQRsTUVwxyZ" />
-          </div>
-
-          <div style="display: flex; gap: 12px; margin-bottom: 28px;">
-            <button class="btn btn-primary" onclick="handleSaveBotToken()">
-              <i class="fa-solid fa-robot"></i> Save & Launch Bot
-            </button>
-          </div>
-        </div>
-
-        <h3 class="card-title" style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-          <i class="fa-solid fa-boxes-stacked"></i> Products Catalogue (Bot Store Menu)
-        </h3>
-
-        <div style="background: #23272e; padding: 18px; border-radius: 12px; margin-bottom: 20px; max-width: 750px;">
-          <h4 style="font-size: 14px; margin-bottom: 12px;">Add Product to Bot:</h4>
-          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-            <input type="text" id="newProdName" class="form-control" placeholder="Product Name (e.g. VIP Pass)" />
-            <input type="number" step="0.01" id="newProdAmount" class="form-control" placeholder="Price (USDT)" />
-            <button class="btn btn-primary" style="justify-content: center;" onclick="addProduct()">
-              <i class="fa-solid fa-plus"></i> Add Item
-            </button>
-          </div>
-          <input type="text" id="newProdDesc" class="form-control" placeholder="Description / Benefits" />
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Product Name</th>
-                <th>Price</th>
-                <th>Description</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="botProductsTbody">
-              <tr><td colspan="4" style="color: var(--text-muted);">No products defined yet.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- TAB 5: Gateway API Keys -->
     <div id="sectionApi" style="display: none;">
       <div class="card" style="max-width: 700px;">
@@ -849,7 +789,7 @@
     }
 
     function showTab(tab) {
-      const tabs = ['overview', 'binance', 'transactions', 'bot', 'api', 'orders', 'admin'];
+      const tabs = ['overview', 'binance', 'transactions', 'api', 'orders', 'admin'];
       tabs.forEach(t => {
         const sec = document.getElementById(`section${t.charAt(0).toUpperCase() + t.slice(1)}`);
         const nav = document.getElementById(`tabNav${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -864,7 +804,6 @@
         overview: ['Merchant Overview', 'Live Binance balance & payments'],
         binance: ['Binance Pay Connector', 'Connect your Binance Merchant credentials'],
         transactions: ['Live Binance Transactions', 'Real-time deposits and wallet transactions'],
-        bot: ['Telegram Bot Integration', 'Automate crypto sales inside Telegram'],
         api: ['Gateway API Keys', 'Credentials for website & external app integration'],
         orders: ['Payment Orders History', 'Complete transaction records & statuses'],
         admin: ['Admin Approval Panel', 'Authorize or reject user sign-up requests'],
