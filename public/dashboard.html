@@ -1107,9 +1107,86 @@
 
     async function fetchLiveBinanceBalance() {
       const btn = document.getElementById('btnRefreshBalance');
-      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching...';
+      if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Fetching Live...';
 
       try {
+        // 1. Get signed query from backend to fetch directly from client browser (bypasses server US cloud geo-block)
+        const signRes = await fetch('/api/v1/merchant/signed-binance-request', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const signData = await signRes.json();
+
+        if (signData.success && signData.apiKey && signData.url) {
+          try {
+            const binanceRes = await fetch(signData.url, {
+              headers: { 'X-MBX-APIKEY': signData.apiKey }
+            });
+            const accountData = await binanceRes.json();
+
+            if (accountData && accountData.balances) {
+              const nonZero = accountData.balances
+                .filter(b => (parseFloat(b.free || 0) > 0 || parseFloat(b.locked || 0) > 0))
+                .map(b => ({
+                  asset: b.asset,
+                  free: parseFloat(b.free).toFixed(4),
+                  locked: parseFloat(b.locked).toFixed(4),
+                  total: (parseFloat(b.free) + parseFloat(b.locked)).toFixed(4),
+                }));
+
+              // Fetch live prices for conversion
+              let totalUSDT = 0;
+              try {
+                const priceRes = await fetch('https://api.binance.com/api/v3/ticker/price');
+                const prices = await priceRes.json();
+                const priceMap = {};
+                if (Array.isArray(prices)) {
+                  prices.forEach(p => { priceMap[p.symbol] = parseFloat(p.price || 0); });
+                }
+
+                nonZero.forEach(b => {
+                  const amt = parseFloat(b.total);
+                  if (['USDT', 'USDC', 'FDUSD', 'BUSD', 'DAI'].includes(b.asset)) {
+                    totalUSDT += amt;
+                    b.estimatedUsdt = amt.toFixed(2);
+                  } else if (priceMap[`${b.asset}USDT`]) {
+                    const val = amt * priceMap[`${b.asset}USDT`];
+                    totalUSDT += val;
+                    b.estimatedUsdt = val.toFixed(2);
+                  } else {
+                    b.estimatedUsdt = '0.00';
+                  }
+                });
+              } catch (e) {
+                nonZero.forEach(b => {
+                  if (['USDT', 'USDC', 'FDUSD', 'BUSD'].includes(b.asset)) {
+                    totalUSDT += parseFloat(b.total);
+                  }
+                });
+              }
+
+              nonZero.sort((a, b) => parseFloat(b.estimatedUsdt || b.total) - parseFloat(a.estimatedUsdt || a.total));
+
+              document.getElementById('liveBalanceAmount').innerText = totalUSDT.toFixed(2);
+              const container = document.getElementById('assetChipsContainer');
+
+              if (nonZero.length > 0) {
+                container.innerHTML = nonZero.map(b => `
+                  <div class="asset-chip">
+                    <strong>${b.asset}</strong>: <span>${b.total}</span>
+                    ${b.estimatedUsdt && b.estimatedUsdt !== '0.00' && b.asset !== 'USDT' ? `<span style="font-size: 11px; color: var(--primary);">(~$${b.estimatedUsdt})</span>` : ''}
+                  </div>
+                `).join('');
+              } else {
+                container.innerHTML = '<div class="asset-chip"><span style="color: var(--text-muted);"><i class="fa-solid fa-circle-check"></i> Connected (0.00 in Binance wallet)</span></div>';
+              }
+              return;
+            }
+          } catch (clientErr) {
+            console.warn('Client direct Binance fetch notice:', clientErr);
+          }
+        }
+
+        // 2. Fallback to backend API
         const res = await fetch('/api/v1/merchant/binance-balance', {
           headers: { 'Authorization': `Bearer ${token}` }
         });

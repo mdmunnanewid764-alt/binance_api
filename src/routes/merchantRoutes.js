@@ -29,6 +29,39 @@ merchantRouter.get('/binance-balance', async (req, res) => {
 });
 
 /**
+ * GET /api/v1/merchant/signed-binance-request
+ * Generates HMAC signature for browser direct fetching (bypasses cloud host IP restrictions)
+ */
+merchantRouter.get('/signed-binance-request', async (req, res) => {
+  try {
+    const apiKey = req.user.binanceConfig?.apiKey;
+    const secretKey = req.user.binanceConfig?.secretKey;
+
+    if (!apiKey || !secretKey) {
+      return res.json({ success: false, error: 'No Binance API keys configured' });
+    }
+
+    const timeOffset = await binancePayService.getServerTimeOffset();
+    const timestamp = Date.now() + timeOffset;
+    const recvWindow = 60000;
+    const queryString = `timestamp=${timestamp}&recvWindow=${recvWindow}`;
+    const signature = binancePayService.buildSpotSignature(queryString, secretKey);
+
+    return res.json({
+      success: true,
+      apiKey,
+      timestamp,
+      queryString,
+      signature,
+      url: `https://api.binance.com/api/v3/account?${queryString}&signature=${signature}`,
+    });
+  } catch (error) {
+    console.error('Error signing Binance request:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * GET /api/v1/merchant/binance-transactions
  * Fetch recent Binance wallet / pay transactions
  */
